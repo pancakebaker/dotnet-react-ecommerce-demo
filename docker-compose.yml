@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ecommercedemo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "EcommerceDemo_StrongPass123!"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+volumes:
+  postgres-data:
+  sqlserver-data:

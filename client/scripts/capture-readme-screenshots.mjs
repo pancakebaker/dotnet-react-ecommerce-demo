@@ -10,6 +10,118 @@ await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1365, height: 768 } });
 
+await page.addInitScript(() => {
+  window.__ECOMMERCE_DEMO_SCREENSHOTS__ = true;
+
+  function installFakeGoogleMaps() {
+    class FakeMap {
+      constructor(element, options) {
+        this.element = element;
+        this.options = options;
+        this.center = options?.center;
+        element.style.background = '#e8f3f0';
+        element.innerHTML = '<div style="display:grid;height:100%;place-items:center;color:#0f766e;font:600 15px system-ui">Google Maps delivery pin</div>';
+      }
+
+      setCenter(center) { this.center = center; }
+      setOptions(options) { this.options = { ...this.options, ...options }; }
+      setZoom(zoom) { this.zoom = zoom; }
+    }
+
+    class FakeMarker {
+      constructor(options) {
+        this.options = options;
+      }
+
+      setMap(map) { this.map = map; }
+      setPosition(position) { this.position = position; }
+      setOptions(options) { this.options = { ...this.options, ...options }; }
+    }
+
+    window.google = {
+      maps: {
+        Map: FakeMap,
+        Marker: FakeMarker,
+        importLibrary: () => Promise.resolve({}),
+        event: {
+          addListener: () => ({ remove() {} }),
+          removeListener: () => {}
+        },
+        Geocoder: class {
+          geocode() {
+            return Promise.resolve({ results: [] });
+          }
+        }
+      }
+    };
+  }
+
+  installFakeGoogleMaps();
+
+  const appendChild = Element.prototype.appendChild;
+  Element.prototype.appendChild = function appendGoogleMapsStub(node) {
+    if (node instanceof HTMLScriptElement && node.src.includes('maps.googleapis.com/maps/api/js')) {
+      setTimeout(() => {
+        installFakeGoogleMaps();
+        node.setAttribute('data-state', 'ready');
+        window.initMap?.();
+        node.onload?.(new Event('load'));
+      }, 0);
+
+      return node;
+    }
+
+    return appendChild.call(this, node);
+  };
+});
+
+await page.route('https://maps.googleapis.com/maps/api/js**', async route => {
+  await route.fulfill({
+    contentType: 'application/javascript',
+    body: `
+      class FakeMap {
+        constructor(element, options) {
+          this.element = element;
+          this.options = options;
+          this.center = options?.center;
+          element.style.background = '#e8f3f0';
+          element.innerHTML = '<div style="display:grid;height:100%;place-items:center;color:#0f766e;font:600 15px system-ui">Google Maps delivery pin</div>';
+        }
+        setCenter(center) { this.center = center; }
+        setOptions(options) { this.options = { ...this.options, ...options }; }
+        setZoom(zoom) { this.zoom = zoom; }
+      }
+
+      class FakeMarker {
+        constructor(options) {
+          this.options = options;
+        }
+        setMap(map) { this.map = map; }
+        setPosition(position) { this.position = position; }
+        setOptions(options) { this.options = { ...this.options, ...options }; }
+      }
+
+      window.google = {
+        maps: {
+          Map: FakeMap,
+          Marker: FakeMarker,
+          event: {
+            addListener: () => ({ remove() {} }),
+            removeListener: () => {}
+          },
+          Geocoder: class {
+            geocode() {
+              return Promise.resolve({ results: [] });
+            }
+          }
+        }
+      };
+
+      window.initMap?.();
+    `
+  });
+});
+
 const products = [
   product('product-scanner', 'Countertop Scanner', 'SCN-100', 'Compact barcode scanner', 149, 24),
   product('product-printer', 'Receipt Printer', 'PRN-220', 'Thermal printer for order desks', 229, 16),

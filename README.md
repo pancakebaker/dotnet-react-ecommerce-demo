@@ -119,7 +119,7 @@ The API defaults to `InMemory` for fast local review. For a hosted demo, use Pos
 | `Jwt__Issuer` | `EcommerceDemo` |
 | `Jwt__Audience` | `EcommerceDemo.Client` |
 | `Jwt__Secret` | Strong secret stored outside source control |
-| `Cors__AllowedOrigins__0` | Hosted frontend URL |
+| `Cors__AllowedOrigins__0` | Hosted frontend URL, or local frontend origin such as `http://localhost:4173` |
 | `VITE_GOOGLE_MAPS_API_KEY` | Browser-restricted Google Maps JavaScript API key |
 
 For local Vite development, a `.env` file is not required because `/api` calls are proxied to `http://127.0.0.1:5088` by `client/vite.config.ts`.

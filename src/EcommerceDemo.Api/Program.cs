@@ -11,6 +11,7 @@ using EcommerceDemo.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection("Stripe"));
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
 if (builder.Environment.IsProduction() &&
     (jwtOptions.Secret.Contains("dev-only", StringComparison.OrdinalIgnoreCase) || jwtOptions.Secret.Length < 32))
@@ -59,6 +60,14 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
 builder.Services.AddScoped<JwtTokenService>();
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddSingleton<IStripePaymentService, TestingStripePaymentService>();
+}
+else
+{
+    builder.Services.AddScoped<IStripePaymentService, StripePaymentService>();
+}
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

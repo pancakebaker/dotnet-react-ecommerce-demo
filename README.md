@@ -19,7 +19,7 @@ The project is intentionally compact while still showing the moving parts of a p
 ## What You Can Try
 
 - Browse active products on an SEO-friendly public storefront.
-- Add products to a cart, move through checkout steps, enter validated customer details, and place an order.
+- Add products to a cart, move through checkout steps, enter validated customer details, pay with Stripe Elements, and place an order.
 - Sign in as staff/admin and review dashboard metrics, customers, products, orders, and profile details.
 - Update order statuses and see activity reflected in dashboard data.
 - Export orders to CSV and products to a styled PDF catalog.
@@ -61,6 +61,7 @@ flowchart LR
 
 - Public storefront with 10 seeded products and a focused cart, customer details, review, and order placement checkout flow.
 - Google Maps delivery pin in checkout that reverse-geocodes pin moves into the address field and geocodes address edits back onto the pin.
+- Stripe Payment Element checkout backed by server-created PaymentIntents, server-owned pricing, and PaymentIntent verification before order creation.
 - SEO metadata, Open Graph/Twitter tags, structured data, valid `robots.txt`, favicon, responsive WebP/JPEG images, and no-JavaScript fallback content.
 - JWT login/register with protected API routes, Admin/Staff authorization, and a staff login password visibility toggle.
 - Dashboard metrics and D3 visualizations for order momentum, product stock, revenue, and recent activity.
@@ -121,19 +122,43 @@ The API defaults to `InMemory` for fast local review. For a hosted demo, use Pos
 | `Jwt__Secret` | Strong secret stored outside source control |
 | `Cors__AllowedOrigins__0` | Hosted frontend URL, or local frontend origin such as `http://localhost:4173` |
 | `VITE_GOOGLE_MAPS_API_KEY` | Browser-restricted Google Maps JavaScript API key |
+| `Stripe__SecretKey` | Stripe secret key, such as `sk_test_...`, stored outside source control |
+| `Stripe__Currency` | `usd` |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key, such as `pk_test_...` |
+
+For local API secrets, copy the example development settings file and keep the real file uncommitted:
+
+```powershell
+Copy-Item .\src\EcommerceDemo.Api\appsettings.Development.example.json .\src\EcommerceDemo.Api\appsettings.Development.json
+```
+
+Then put your local Stripe secret key in `src/EcommerceDemo.Api/appsettings.Development.json`:
+
+```json
+{
+  "Stripe": {
+    "SecretKey": "sk_test_your_secret_key",
+    "Currency": "usd"
+  }
+}
+```
 
 For local Vite development, a `.env` file is not required because `/api` calls are proxied to `http://127.0.0.1:5088` by `client/vite.config.ts`.
 
-Frontend production builds can set `VITE_API_URL` to point at a hosted API and `VITE_GOOGLE_MAPS_API_KEY` to enable the checkout delivery pin. Copy `client/.env.example` to `client/.env` for local experiments that need custom frontend settings:
+Frontend production builds can set `VITE_API_URL` to point at a hosted API, `VITE_GOOGLE_MAPS_API_KEY` to enable the checkout delivery pin, and `VITE_STRIPE_PUBLISHABLE_KEY` to enable Stripe Elements. Copy `client/.env.example` to `client/.env` for local experiments that need custom frontend settings:
 
 ```text
 VITE_API_URL=https://your-api.example.com
 VITE_GOOGLE_MAPS_API_KEY=your-browser-key
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_key
 ```
+
+When using Stripe test mode, Stripe's standard test card `4242 4242 4242 4242` works with any future expiration date, any CVC, and any postal code.
 
 ## Security Notes
 
 - API input validation normalizes text fields, rejects markup/script-like input, enforces length limits, and validates email domains, phone numbers, SKU, price, stock, password, and order quantity ranges.
+- Stripe card data is handled by Stripe Elements; the API creates PaymentIntents with server-calculated totals and verifies the PaymentIntent amount/status before creating storefront orders.
 - Frontend forms mirror key customer validation rules so incomplete emails, short phone numbers, and unsafe data are caught before submission.
 - React renders user-entered data as escaped text and avoids raw HTML rendering.
 - JWT secrets are rejected in production if they use weak demo values.
@@ -144,6 +169,7 @@ VITE_GOOGLE_MAPS_API_KEY=your-browser-key
 
 - `GET /health`
 - `GET /api/storefront/products`
+- `POST /api/storefront/payments/create-intent`
 - `POST /api/storefront/orders`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
@@ -192,7 +218,11 @@ docker build -f src/EcommerceDemo.Api/Dockerfile -t ecommerce-demo-api .
 Build the frontend image:
 
 ```powershell
-docker build -f client/Dockerfile --build-arg VITE_API_URL=https://your-api.example.com -t ecommerce-demo-client .
+docker build -f client/Dockerfile `
+  --build-arg VITE_API_URL=https://your-api.example.com `
+  --build-arg VITE_GOOGLE_MAPS_API_KEY=your-browser-key `
+  --build-arg VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_key `
+  -t ecommerce-demo-client .
 ```
 
 `docker-compose.yml` includes local PostgreSQL and SQL Server services for database testing.
@@ -206,7 +236,8 @@ Recommended hosted demo shape:
 - Use PostgreSQL or SQL Server for persistence.
 - Store JWT secrets and connection strings as environment variables.
 - Set `Cors__AllowedOrigins__0` to the hosted frontend URL.
-- Set `VITE_API_URL` to the hosted API URL and `VITE_GOOGLE_MAPS_API_KEY` to a browser-restricted Google Maps key before building the frontend.
+- Set `VITE_API_URL` to the hosted API URL, `VITE_GOOGLE_MAPS_API_KEY` to a browser-restricted Google Maps key, and `VITE_STRIPE_PUBLISHABLE_KEY` to a Stripe publishable key before building the frontend.
+- Configure `Stripe__SecretKey` on the API host. Use Stripe test keys for this demo unless you have completed production payment review.
 
 ## Project Layout
 

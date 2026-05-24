@@ -224,6 +224,12 @@ await page.getByRole('button', { name: 'Checkout' }).click();
 await page.getByRole('heading', { name: 'Review your cart' }).waitFor();
 await page.getByRole('button', { name: 'Continue to customer details' }).click();
 await page.getByRole('heading', { name: 'Customer details' }).waitFor();
+await page.getByLabel('Name').fill('Demo Buyer');
+await page.getByLabel('Email').fill('buyer@example.test');
+await page.getByLabel('Phone').fill('+1 555-0199');
+await page.getByLabel('Address').fill('15 Checkout Lane');
+await page.getByRole('button', { name: 'Review order' }).click();
+await page.getByRole('heading', { name: 'Place order' }).waitFor();
 await capture('checkout');
 await page.getByRole('button', { name: 'Continue shopping' }).click();
 

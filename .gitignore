@@ -10,6 +10,7 @@ test-results/
 node_modules/
 dist/
 .env
+src/EcommerceDemo.Api/appsettings.Development.json
 *.user
 *.suo
 *.log

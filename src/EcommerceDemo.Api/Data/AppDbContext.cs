@@ -68,6 +68,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.Tax).HasColumnName("tax").HasPrecision(12, 2);
             entity.Property(x => x.Discount).HasColumnName("discount").HasPrecision(12, 2);
             entity.Property(x => x.Total).HasColumnName("total").HasPrecision(12, 2);
+            entity.Property(x => x.StripePaymentIntentId).HasColumnName("stripe_payment_intent_id").HasMaxLength(255);
             entity.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");

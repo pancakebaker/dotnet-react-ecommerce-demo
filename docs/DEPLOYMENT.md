@@ -21,10 +21,12 @@ Set production secrets in the hosting provider:
 - `Jwt__Audience=EcommerceDemo.Client`
 - `Jwt__Secret`
 - `Cors__AllowedOrigins__0`
+- `Stripe__SecretKey`
+- `Stripe__Currency=usd`
 
 ## Frontend
 
-Deploy `client` as a static Vite app. Set `VITE_API_URL` to the public API base URL and `VITE_GOOGLE_MAPS_API_KEY` to a browser-restricted Google Maps JavaScript API key before building.
+Deploy `client` as a static Vite app. Set `VITE_API_URL` to the public API base URL, `VITE_GOOGLE_MAPS_API_KEY` to a browser-restricted Google Maps JavaScript API key, and `VITE_STRIPE_PUBLISHABLE_KEY` to a Stripe publishable key before building.
 
 ```powershell
 cd client
@@ -36,5 +38,9 @@ npm run build
 
 ```powershell
 docker build -f src/EcommerceDemo.Api/Dockerfile -t ecommerce-demo-api .
-docker build -f client/Dockerfile --build-arg VITE_API_URL=https://your-api.example.com -t ecommerce-demo-client .
+docker build -f client/Dockerfile `
+  --build-arg VITE_API_URL=https://your-api.example.com `
+  --build-arg VITE_GOOGLE_MAPS_API_KEY=your-browser-key `
+  --build-arg VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_key `
+  -t ecommerce-demo-client .
 ```

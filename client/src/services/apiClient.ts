@@ -7,6 +7,8 @@ import type {
   PagedResult,
   Product,
   StorefrontCheckoutRequest,
+  StorefrontPaymentIntentRequest,
+  StorefrontPaymentIntentResponse,
   User
 } from '../models';
 
@@ -62,6 +64,13 @@ export class ApiClient {
 
   async placeStorefrontOrder(payload: StorefrontCheckoutRequest): Promise<Order> {
     return this.request<Order>('/api/storefront/orders', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async createStorefrontPaymentIntent(payload: StorefrontPaymentIntentRequest): Promise<StorefrontPaymentIntentResponse> {
+    return this.request<StorefrontPaymentIntentResponse>('/api/storefront/payments/create-intent', {
       method: 'POST',
       body: JSON.stringify(payload)
     });

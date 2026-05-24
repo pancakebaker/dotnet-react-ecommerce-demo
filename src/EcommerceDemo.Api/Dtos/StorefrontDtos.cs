@@ -11,4 +11,17 @@ public sealed record StorefrontOrderItemRequest(Guid ProductId, int Quantity);
 
 public sealed record StorefrontCheckoutRequest(
     StorefrontCustomerRequest Customer,
-    IReadOnlyCollection<StorefrontOrderItemRequest> Items);
+    IReadOnlyCollection<StorefrontOrderItemRequest> Items,
+    string? PaymentIntentId = null);
+
+public sealed record StorefrontPaymentIntentRequest(
+    StorefrontCustomerRequest Customer,
+    IReadOnlyCollection<StorefrontOrderItemRequest> Items,
+    string? IdempotencyKey = null);
+
+public sealed record StorefrontPaymentIntentResponse(
+    string ClientSecret,
+    string PaymentIntentId,
+    long Amount,
+    string Currency,
+    string Status);

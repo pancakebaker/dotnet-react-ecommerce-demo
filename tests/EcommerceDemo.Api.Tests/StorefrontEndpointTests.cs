@@ -16,6 +16,43 @@ public sealed class StorefrontEndpointTests(ApiTestFactory factory) : IClassFixt
         Assert.NotNull(products);
         var product = Assert.Single(products.Where(item => item.IsActive).Take(1));
 
+        var payment = await _client.PostAsJsonAsync("/api/storefront/payments/create-intent", new StorefrontPaymentIntentRequest(
+            new StorefrontCustomerRequest(
+                "Front Door Buyer",
+                "Public Demo Co",
+                "buyer@public-demo.test",
+                "+1 555-0188",
+                "15 Checkout Lane"),
+            [new StorefrontOrderItemRequest(product.Id, 2)],
+            "test-checkout-payment"));
+        payment.EnsureSuccessStatusCode();
+        var paymentIntent = await payment.Content.ReadFromJsonAsync<StorefrontPaymentIntentResponse>();
+
+        var response = await _client.PostAsJsonAsync("/api/storefront/orders", new StorefrontCheckoutRequest(
+            new StorefrontCustomerRequest(
+                "Front Door Buyer",
+                "Public Demo Co",
+                "buyer@public-demo.test",
+                "+1 555-0188",
+                "15 Checkout Lane"),
+            [new StorefrontOrderItemRequest(product.Id, 2)],
+            paymentIntent!.PaymentIntentId));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var order = await response.Content.ReadFromJsonAsync<OrderResponse>();
+
+        Assert.NotNull(order);
+        Assert.Equal("Front Door Buyer", order.CustomerName);
+        Assert.Equal("Submitted", order.Status);
+        Assert.True(order.Total > 0);
+    }
+
+    [Fact]
+    public async Task Storefront_Checkout_Requires_Stripe_Payment()
+    {
+        var products = await _client.GetFromJsonAsync<List<ProductResponse>>("/api/storefront/products");
+        var product = Assert.Single(products!.Where(item => item.IsActive).Take(1));
+
         var response = await _client.PostAsJsonAsync("/api/storefront/orders", new StorefrontCheckoutRequest(
             new StorefrontCustomerRequest(
                 "Front Door Buyer",
@@ -25,13 +62,7 @@ public sealed class StorefrontEndpointTests(ApiTestFactory factory) : IClassFixt
                 "15 Checkout Lane"),
             [new StorefrontOrderItemRequest(product.Id, 2)]));
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var order = await response.Content.ReadFromJsonAsync<OrderResponse>();
-
-        Assert.NotNull(order);
-        Assert.Equal("Front Door Buyer", order.CustomerName);
-        Assert.Equal("Submitted", order.Status);
-        Assert.True(order.Total > 0);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

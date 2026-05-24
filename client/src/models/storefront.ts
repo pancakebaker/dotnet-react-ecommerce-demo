@@ -14,6 +14,24 @@ export interface StorefrontCheckoutRequest {
     productId: string;
     quantity: number;
   }>;
+  paymentIntentId?: string;
+}
+
+export interface StorefrontPaymentIntentRequest {
+  customer: StorefrontCustomer;
+  items: Array<{
+    productId: string;
+    quantity: number;
+  }>;
+  idempotencyKey?: string;
+}
+
+export interface StorefrontPaymentIntentResponse {
+  clientSecret: string;
+  paymentIntentId: string;
+  amount: number;
+  currency: string;
+  status: string;
 }
 
 export type CartItem = Product & { quantity: number };

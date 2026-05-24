@@ -18,6 +18,12 @@ type ReviewStepProps = {
   onPlaceOrder: (paymentIntentId: string) => Promise<void>;
 };
 
+declare global {
+  interface Window {
+    __ECOMMERCE_DEMO_E2E_PAYMENT_INTENT_ID__?: string;
+  }
+}
+
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
@@ -120,6 +126,18 @@ export function ReviewStep({
 
             {!window.__ECOMMERCE_DEMO_SCREENSHOTS__ && paymentError && (
               <p className="rounded-md bg-rose-50 p-3 text-sm text-rose-700">{paymentError}</p>
+            )}
+
+            {!window.__ECOMMERCE_DEMO_SCREENSHOTS__ && window.__ECOMMERCE_DEMO_E2E_PAYMENT_INTENT_ID__ && (
+              <button
+                className="focus-ring w-full rounded-md bg-brand px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
+                disabled={placing}
+                onClick={() => {
+                  void onPlaceOrder(window.__ECOMMERCE_DEMO_E2E_PAYMENT_INTENT_ID__ ?? '');
+                }}
+              >
+                {placing ? 'Placing order' : 'Place order'}
+              </button>
             )}
 
             {!window.__ECOMMERCE_DEMO_SCREENSHOTS__ && stripePromise && stripeOptions && paymentIntent && (

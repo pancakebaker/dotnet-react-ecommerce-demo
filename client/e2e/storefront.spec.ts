@@ -22,6 +22,10 @@ const products = [
 ];
 
 test('visitor can add a product, enter customer details, and place an order', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__ECOMMERCE_DEMO_E2E_PAYMENT_INTENT_ID__ = 'pi_e2e_paid';
+  });
+
   await page.route('**/api/storefront/products**', async route => {
     await route.fulfill({ json: products });
   });
@@ -37,6 +41,7 @@ test('visitor can add a product, enter customer details, and place an order', as
       address: '15 Checkout Lane'
     });
     expect(payload.items).toEqual([{ productId: 'product-scanner', quantity: 1 }]);
+    expect(payload.paymentIntentId).toBe('pi_e2e_paid');
 
     await route.fulfill({
       status: 201,

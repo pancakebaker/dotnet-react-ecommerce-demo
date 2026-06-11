@@ -104,7 +104,7 @@ function ProductCard({
               type="button"
             >
               <Plus className="h-4 w-4" />
-              Add
+              Add to cart
             </button>
           </div>
         </div>

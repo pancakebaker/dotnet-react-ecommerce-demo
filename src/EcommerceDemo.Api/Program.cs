@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection("Stripe"));
+builder.Services.Configure<HubSpotOptions>(builder.Configuration.GetSection("HubSpot"));
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
 if (builder.Environment.IsProduction() &&
     (jwtOptions.Secret.Contains("dev-only", StringComparison.OrdinalIgnoreCase) || jwtOptions.Secret.Length < 32))
@@ -60,14 +61,24 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
 builder.Services.AddScoped<JwtTokenService>();
+builder.Services.AddScoped<OrderNumberService>();
+builder.Services.AddSingleton<OrderItemFactory>();
+builder.Services.AddSingleton<OrderMapper>();
+builder.Services.AddSingleton<OrderPricingService>();
+builder.Services.AddScoped<StorefrontCheckoutService>();
 if (builder.Environment.IsEnvironment("Testing"))
 {
-    builder.Services.AddSingleton<IStripePaymentService, TestingStripePaymentService>();
+    builder.Services.AddSingleton<IPaymentProvider, TestingPaymentProvider>();
+    builder.Services.AddSingleton<IHubSpotOrderSyncService, TestingHubSpotOrderSyncService>();
 }
 else
 {
-    builder.Services.AddScoped<IStripePaymentService, StripePaymentService>();
+    builder.Services.AddScoped<IPaymentProvider, StripePaymentService>();
+    builder.Services.AddHttpClient<IHubSpotOrderSyncService, HubSpotOrderSyncService>();
 }
+builder.Services.AddScoped<ICheckoutPaymentMethod, CardCheckoutPaymentMethod>();
+builder.Services.AddSingleton<ICheckoutPaymentMethod, CashOnDeliveryPaymentMethod>();
+builder.Services.AddScoped<ICheckoutPaymentMethodRegistry, CheckoutPaymentMethodRegistry>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

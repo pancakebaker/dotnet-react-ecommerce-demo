@@ -1,18 +1,19 @@
-import { checkoutSteps, type CheckoutStep } from './checkoutTypes';
+import type { CheckoutStepDescriptor, CheckoutStepId } from '../checkout/checkoutSteps';
 
 type CheckoutProgressProps = {
-  activeStep: CheckoutStep;
-  canOpenStep: (step: CheckoutStep) => boolean;
-  onStepChange: (step: CheckoutStep) => void;
+  activeStep: CheckoutStepId;
+  canOpenStep: (step: CheckoutStepDescriptor) => boolean;
+  onStepChange: (step: CheckoutStepId) => void;
+  steps: CheckoutStepDescriptor[];
 };
 
-export function CheckoutProgress({ activeStep, canOpenStep, onStepChange }: CheckoutProgressProps) {
+export function CheckoutProgress({ activeStep, canOpenStep, onStepChange, steps }: CheckoutProgressProps) {
   return (
     <nav className="rounded-lg border border-line bg-white p-3 shadow-sm" aria-label="Checkout progress">
-      <ol className="grid gap-2 sm:grid-cols-3">
-        {checkoutSteps.map((item, index) => {
+      <ol className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+        {steps.map((item, index) => {
           const active = item.id === activeStep;
-          const enabled = canOpenStep(item.id);
+          const enabled = canOpenStep(item);
 
           return (
             <li key={item.id}>

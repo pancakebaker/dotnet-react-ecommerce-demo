@@ -23,6 +23,14 @@ Set production secrets in the hosting provider:
 - `Cors__AllowedOrigins__0`
 - `Stripe__SecretKey`
 - `Stripe__Currency=usd`
+- `HubSpot__Enabled=true`
+- `HubSpot__AccessToken`
+- `HubSpot__ObjectType=deals`
+- `HubSpot__Pipeline`
+- `HubSpot__DealStage`
+- `HubSpot__StatusDealStages__Submitted`
+
+HubSpot integration is optional. Keep the private app token on the API host only, and use HubSpot internal pipeline/stage IDs when mapping order statuses to deal stages.
 
 ## Frontend
 

@@ -1,4 +1,4 @@
-import { Plus, Search } from 'lucide-react';
+import { Eye, Plus, Search } from 'lucide-react';
 import { formatMoney } from '../../../helpers/format';
 import { getProductImage } from '../../../helpers/productImages';
 import type { Product } from '../../../models';
@@ -8,9 +8,10 @@ type ProductCatalogProps = {
   search: string;
   onSearchChange: (search: string) => void;
   onAddToCart: (product: Product) => void;
+  onViewProduct: (product: Product) => void;
 };
 
-export function ProductCatalog({ products, search, onSearchChange, onAddToCart }: ProductCatalogProps) {
+export function ProductCatalog({ products, search, onSearchChange, onAddToCart, onViewProduct }: ProductCatalogProps) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       <section aria-labelledby="products-heading" className="space-y-4">
@@ -30,7 +31,13 @@ export function ProductCatalog({ products, search, onSearchChange, onAddToCart }
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {products.map((product, index) => (
-            <ProductCard key={product.id} product={product} imagePriority={index === 0} onAddToCart={onAddToCart} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              imagePriority={index === 0}
+              onAddToCart={onAddToCart}
+              onViewProduct={onViewProduct}
+            />
           ))}
         </div>
       </section>
@@ -38,7 +45,17 @@ export function ProductCatalog({ products, search, onSearchChange, onAddToCart }
   );
 }
 
-function ProductCard({ product, imagePriority, onAddToCart }: { product: Product; imagePriority: boolean; onAddToCart: (product: Product) => void }) {
+function ProductCard({
+  product,
+  imagePriority,
+  onAddToCart,
+  onViewProduct
+}: {
+  product: Product;
+  imagePriority: boolean;
+  onAddToCart: (product: Product) => void;
+  onViewProduct: (product: Product) => void;
+}) {
   const image = getProductImage(product.sku, product.name);
 
   return (
@@ -70,12 +87,26 @@ function ProductCard({ product, imagePriority, onAddToCart }: { product: Product
           <span className="rounded-md bg-teal-50 px-2 py-1 text-sm font-semibold text-brand">{formatMoney(product.price)}</span>
         </div>
         <p className="mt-3 min-h-12 text-sm leading-6 text-slate-600">{product.description ?? 'Business-ready inventory item.'}</p>
-        <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-slate-500">{product.stockQuantity} in stock</span>
-          <button className="focus-ring inline-flex items-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-teal-800" onClick={() => onAddToCart(product)}>
-            <Plus className="h-4 w-4" />
-            Add to cart
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="focus-ring inline-flex items-center gap-2 rounded-md border border-line px-3 py-2 text-sm font-medium hover:bg-field"
+              onClick={() => onViewProduct(product)}
+              type="button"
+            >
+              <Eye className="h-4 w-4" />
+              View
+            </button>
+            <button
+              className="focus-ring inline-flex items-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
+              onClick={() => onAddToCart(product)}
+              type="button"
+            >
+              <Plus className="h-4 w-4" />
+              Add
+            </button>
+          </div>
         </div>
       </div>
     </article>

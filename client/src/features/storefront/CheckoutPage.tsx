@@ -1,15 +1,13 @@
 import { ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 import { formatMoney } from '../../helpers/format';
-import type { CartItem, StorefrontCustomer, StorefrontPaymentIntentResponse } from '../../models';
-import { CartStep } from './components/CartStep';
+import type { CartItem, PaymentMethodId, StorefrontCustomer, StorefrontPaymentIntentResponse } from '../../models';
+import { checkoutSteps, getCheckoutStep, getFirstCheckoutStep, type CheckoutStepContext, type CheckoutStepId } from './checkout/checkoutSteps';
 import { CheckoutProgress } from './components/CheckoutProgress';
-import { CustomerStep } from './components/CustomerStep';
 import { OrderConfirmationDialog } from './components/OrderConfirmationDialog';
 import { OrderSummary } from './components/OrderSummary';
-import { ReviewStep } from './components/ReviewStep';
-import type { CheckoutStep } from './components/checkoutTypes';
 import { hasValidStorefrontCustomer } from './helpers/storefrontCart';
+import type { StorefrontInvoice } from './helpers/storefrontInvoice';
 
 type CheckoutPageProps = {
   cart: CartItem[];
@@ -22,9 +20,14 @@ type CheckoutPageProps = {
   setCustomer: (updater: (current: StorefrontCustomer) => StorefrontCustomer) => void;
   changeQuantity: (productId: string, delta: number) => void;
   onBackToStore: () => void;
-  onCreatePaymentIntent: (idempotencyKey: string) => Promise<StorefrontPaymentIntentResponse | null>;
-  onPlaceOrder: (paymentIntentId: string) => Promise<string | null>;
+  onPreparePayment: (paymentMethod: PaymentMethodId, idempotencyKey: string) => Promise<StorefrontPaymentIntentResponse | null>;
+  onPlaceOrder: (paymentMethod: PaymentMethodId, paymentReferenceId?: string) => Promise<string | null>;
   onOrderConfirmed: () => void;
+};
+
+type OrderConfirmationState = {
+  orderNumber: string;
+  invoice?: StorefrontInvoice;
 };
 
 export function CheckoutPage({
@@ -38,27 +41,68 @@ export function CheckoutPage({
   setCustomer,
   changeQuantity,
   onBackToStore,
-  onCreatePaymentIntent,
+  onPreparePayment,
   onPlaceOrder,
   onOrderConfirmed
 }: CheckoutPageProps) {
-  const [step, setStep] = useState<CheckoutStep>('cart');
-  const [confirmedOrderNumber, setConfirmedOrderNumber] = useState('');
+  const [step, setStep] = useState<CheckoutStepId>(getFirstCheckoutStep().id);
+  const [confirmation, setConfirmation] = useState<OrderConfirmationState | null>(null);
   const hasCartItems = cart.length > 0;
   const hasCustomerDetails = hasValidStorefrontCustomer(customer);
+  const activeStep = getCheckoutStep(step);
+  const activeStepIndex = checkoutSteps.findIndex(item => item.id === activeStep.id);
 
-  function canOpenStep(nextStep: CheckoutStep) {
-    if (nextStep === 'cart') return true;
-    if (nextStep === 'customer') return hasCartItems;
-    return hasCartItems && hasCustomerDetails;
-  }
-
-  async function submitOrder(paymentIntentId: string) {
-    const orderNumber = await onPlaceOrder(paymentIntentId);
-    if (orderNumber) {
-      setConfirmedOrderNumber(orderNumber);
+  function goToStep(nextStep: CheckoutStepId) {
+    const descriptor = getCheckoutStep(nextStep);
+    if (descriptor.canOpen(checkoutContext)) {
+      setStep(descriptor.id);
     }
   }
+
+  function goBack() {
+    const previousStep = checkoutSteps[activeStepIndex - 1];
+    if (previousStep) {
+      setStep(previousStep.id);
+    } else {
+      onBackToStore();
+    }
+  }
+
+  function goNext() {
+    const nextStep = checkoutSteps[activeStepIndex + 1];
+    if (nextStep?.canOpen(checkoutContext)) {
+      setStep(nextStep.id);
+    }
+  }
+
+  async function submitOrder(paymentMethod: PaymentMethodId, paymentReferenceId?: string) {
+    const orderNumber = await onPlaceOrder(paymentMethod, paymentReferenceId);
+    if (orderNumber) {
+      setConfirmation({
+        orderNumber,
+        invoice: paymentMethod === 'cash_on_delivery'
+          ? { orderNumber, customer, cart, subtotal, tax, total, paymentMethod }
+          : undefined
+      });
+    }
+  }
+
+  const checkoutContext: CheckoutStepContext = {
+    cart,
+    customer,
+    hasCartItems,
+    hasCustomerDetails,
+    placing,
+    status,
+    total,
+    setCustomer,
+    changeQuantity,
+    onBackToStore,
+    onPreparePayment,
+    onSubmitOrder: submitOrder,
+    goBack,
+    goNext
+  };
 
   return (
     <main className="min-h-screen bg-field text-ink">
@@ -73,47 +117,27 @@ export function CheckoutPage({
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-        <CheckoutProgress activeStep={step} canOpenStep={canOpenStep} onStepChange={setStep} />
+        <CheckoutProgress
+          activeStep={activeStep.id}
+          canOpenStep={item => item.canOpen(checkoutContext)}
+          onStepChange={goToStep}
+          steps={checkoutSteps}
+        />
 
         <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
-            {step === 'cart' && (
-              <CartStep
-                cart={cart}
-                changeQuantity={changeQuantity}
-                onBackToStore={onBackToStore}
-                onNext={() => setStep('customer')}
-              />
-            )}
-            {step === 'customer' && (
-              <CustomerStep
-                customer={customer}
-                canContinue={hasCustomerDetails}
-                setCustomer={setCustomer}
-                onBack={() => setStep('cart')}
-                onNext={() => setStep('review')}
-              />
-            )}
-            {step === 'review' && (
-              <ReviewStep
-                cart={cart}
-                customer={customer}
-                placing={placing}
-                canPlaceOrder={hasCartItems && hasCustomerDetails && !placing}
-                status={status}
-                total={total}
-                onBack={() => setStep('customer')}
-                onCreatePaymentIntent={onCreatePaymentIntent}
-                onPlaceOrder={submitOrder}
-              />
-            )}
+            {activeStep.render(checkoutContext)}
           </section>
 
           <OrderSummary subtotal={subtotal} tax={tax} total={total} />
         </div>
       </div>
 
-      <OrderConfirmationDialog orderNumber={confirmedOrderNumber} onConfirm={onOrderConfirmed} />
+      <OrderConfirmationDialog
+        invoice={confirmation?.invoice}
+        orderNumber={confirmation?.orderNumber ?? ''}
+        onConfirm={onOrderConfirmed}
+      />
     </main>
   );
 }

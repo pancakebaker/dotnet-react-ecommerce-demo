@@ -19,10 +19,10 @@ The project is intentionally compact while still showing the moving parts of a p
 ## What You Can Try
 
 - Browse active products on an SEO-friendly public storefront.
-- Add products to a cart, move through checkout steps, enter validated customer details, pay with Stripe Elements, and place an order.
+- Add products to a cart, move through checkout steps, enter validated customer details, choose Stripe card payment or cash on delivery, and place an order.
 - Sign in as staff/admin and review dashboard metrics, customers, products, orders, and profile details.
 - Update order statuses and see activity reflected in dashboard data.
-- Export orders to CSV and products to a styled PDF catalog.
+- Export orders to CSV, products to a styled PDF catalog, and checkout invoices to PDF.
 - Run backend and frontend tests from a clean checkout.
 
 ## Demo Accounts
@@ -60,8 +60,14 @@ flowchart LR
 ## Feature Highlights
 
 - Public storefront with 10 seeded products and a focused cart, customer details, review, and order placement checkout flow.
+- Product catalog cards link to product detail URLs like `/products/countertop-scanner`, with product-specific hero imagery and detail copy.
+- The storefront hero is built from a reusable commerce hero shell so future product, campaign, or category pages can inject their own background, content, stats, and actions.
+- Checkout progress is registry-driven so steps can be added, reordered, or removed from one descriptor list.
 - Google Maps delivery pin in checkout that reverse-geocodes pin moves into the address field and geocodes address edits back onto the pin.
 - Stripe Payment Element checkout backed by server-created PaymentIntents, server-owned pricing, and PaymentIntent verification before order creation.
+- Payment provider boundary follows the Open/Closed Principle: checkout payment methods plug into shared backend/frontend extension points.
+- Checkout supports Visa/Mastercard card entry through Stripe and cash on delivery with an invoice PDF download after order placement.
+- Optional HubSpot order sync that creates/updates CRM deals from storefront and staff-created orders.
 - SEO metadata, Open Graph/Twitter tags, structured data, valid `robots.txt`, favicon, responsive WebP/JPEG images, and no-JavaScript fallback content.
 - JWT login/register with protected API routes, Admin/Staff authorization, and a staff login password visibility toggle.
 - Dashboard metrics and D3 visualizations for order momentum, product stock, revenue, and recent activity.
@@ -124,6 +130,12 @@ The API defaults to `InMemory` for fast local review. For a hosted demo, use Pos
 | `VITE_GOOGLE_MAPS_API_KEY` | Browser-restricted Google Maps JavaScript API key |
 | `Stripe__SecretKey` | Stripe secret key, such as `sk_test_...`, stored outside source control |
 | `Stripe__Currency` | `usd` |
+| `HubSpot__Enabled` | `true` to sync orders to HubSpot |
+| `HubSpot__AccessToken` | HubSpot private app access token, stored outside source control |
+| `HubSpot__ObjectType` | `deals` |
+| `HubSpot__Pipeline` | Optional HubSpot pipeline internal ID |
+| `HubSpot__DealStage` | Default HubSpot deal stage internal ID |
+| `HubSpot__StatusDealStages__Submitted` | Optional status-specific HubSpot deal stage internal ID |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key, such as `pk_test_...` |
 
 For local API secrets, copy the example development settings file and keep the real file uncommitted:
@@ -132,16 +144,31 @@ For local API secrets, copy the example development settings file and keep the r
 Copy-Item .\src\EcommerceDemo.Api\appsettings.Development.example.json .\src\EcommerceDemo.Api\appsettings.Development.json
 ```
 
-Then put your local Stripe secret key in `src/EcommerceDemo.Api/appsettings.Development.json`:
+Then put your local API secrets in `src/EcommerceDemo.Api/appsettings.Development.json`:
 
 ```json
 {
   "Stripe": {
     "SecretKey": "sk_test_your_secret_key",
     "Currency": "usd"
+  },
+  "HubSpot": {
+    "Enabled": false,
+    "AccessToken": "pat-na1-your-private-app-token",
+    "ObjectType": "deals",
+    "Pipeline": "",
+    "DealStage": "",
+    "StatusDealStages": {
+      "Submitted": "",
+      "Processing": "",
+      "Completed": "",
+      "Cancelled": ""
+    }
   }
 }
 ```
+
+HubSpot sync is disabled by default. When enabled, the API creates a CRM deal after staff or storefront order creation and updates the same deal when order status changes. HubSpot requires internal pipeline and deal stage IDs for deal stage changes; use the values from your HubSpot portal or leave the status mapping blank while testing basic order creation.
 
 For local Vite development, a `.env` file is not required because `/api` calls are proxied to `http://127.0.0.1:5088` by `client/vite.config.ts`.
 
@@ -159,6 +186,7 @@ When using Stripe test mode, Stripe's standard test card `4242 4242 4242 4242` w
 
 - API input validation normalizes text fields, rejects markup/script-like input, enforces length limits, and validates email domains, phone numbers, SKU, price, stock, password, and order quantity ranges.
 - Stripe card data is handled by Stripe Elements; the API creates PaymentIntents with server-calculated totals and verifies the PaymentIntent amount/status before creating storefront orders.
+- HubSpot private app tokens are used only by the API and should never be exposed to the Vite client.
 - Frontend forms mirror key customer validation rules so incomplete emails, short phone numbers, and unsafe data are caught before submission.
 - React renders user-entered data as escaped text and avoids raw HTML rendering.
 - JWT secrets are rejected in production if they use weak demo values.
@@ -169,6 +197,7 @@ When using Stripe test mode, Stripe's standard test card `4242 4242 4242 4242` w
 
 - `GET /health`
 - `GET /api/storefront/products`
+- `POST /api/storefront/payments/prepare`
 - `POST /api/storefront/payments/create-intent`
 - `POST /api/storefront/orders`
 - `POST /api/auth/register`
@@ -238,6 +267,7 @@ Recommended hosted demo shape:
 - Set `Cors__AllowedOrigins__0` to the hosted frontend URL.
 - Set `VITE_API_URL` to the hosted API URL, `VITE_GOOGLE_MAPS_API_KEY` to a browser-restricted Google Maps key, and `VITE_STRIPE_PUBLISHABLE_KEY` to a Stripe publishable key before building the frontend.
 - Configure `Stripe__SecretKey` on the API host. Use Stripe test keys for this demo unless you have completed production payment review.
+- Configure `HubSpot__Enabled=true`, `HubSpot__AccessToken`, and HubSpot pipeline/stage IDs on the API host only when you want demo orders synced to HubSpot.
 
 ## Project Layout
 

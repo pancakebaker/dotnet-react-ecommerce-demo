@@ -3,22 +3,35 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DeliveryMapPicker } from './DeliveryMapPicker';
 
-vi.mock('@react-google-maps/api', () => ({
-  GoogleMap: ({ children, onClick }: { children: ReactNode; onClick: (event: { latLng: { lat: () => number; lng: () => number } }) => void }) => (
-    <div data-testid="google-map">
-      <button type="button" onClick={() => onClick({ latLng: { lat: () => 10.123456, lng: () => 20.654321 } })}>
-        Move map pin
-      </button>
-      {children}
-    </div>
-  ),
-  MarkerF: ({ onDragEnd }: { onDragEnd: (event: { latLng: { lat: () => number; lng: () => number } }) => void }) => (
-    <button type="button" onClick={() => onDragEnd({ latLng: { lat: () => 11.123456, lng: () => 21.654321 } })}>
-      Drag marker
-    </button>
-  ),
-  useJsApiLoader: () => ({ isLoaded: true, loadError: null })
-}));
+vi.mock('@react-google-maps/api', async () => {
+  const React = await vi.importActual<typeof import('react')>('react');
+
+  return {
+    GoogleMap: ({
+      children,
+      onClick,
+      onLoad
+    }: {
+      children: ReactNode;
+      onClick: (event: { latLng: { lat: () => number; lng: () => number } }) => void;
+      onLoad?: (map: object) => void;
+    }) => {
+      React.useEffect(() => {
+        onLoad?.({});
+      }, [onLoad]);
+
+      return (
+        <div data-testid="google-map">
+          <button type="button" onClick={() => onClick({ latLng: { lat: () => 10.123456, lng: () => 20.654321 } })}>
+            Move map pin
+          </button>
+          {children}
+        </div>
+      );
+    },
+    useJsApiLoader: () => ({ isLoaded: true, loadError: null })
+  };
+});
 
 describe('DeliveryMapPicker', () => {
   beforeEach(() => {
@@ -47,7 +60,15 @@ describe('DeliveryMapPicker', () => {
                 }]
               });
             })
-          }))
+          })),
+          importLibrary: vi.fn(() => Promise.resolve({
+            AdvancedMarkerElement: vi.fn(() => ({
+              addListener: vi.fn(() => ({ remove: vi.fn() })),
+              map: null,
+              position: null
+            }))
+          })),
+          LatLng: vi.fn()
         }
       }
     });

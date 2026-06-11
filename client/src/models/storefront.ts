@@ -8,12 +8,16 @@ export type StorefrontCustomer = {
   address?: string;
 };
 
+export type PaymentMethodId = string;
+
 export interface StorefrontCheckoutRequest {
   customer: StorefrontCustomer;
   items: Array<{
     productId: string;
     quantity: number;
   }>;
+  paymentMethod?: PaymentMethodId;
+  paymentReferenceId?: string;
   paymentIntentId?: string;
 }
 
@@ -24,11 +28,14 @@ export interface StorefrontPaymentIntentRequest {
     quantity: number;
   }>;
   idempotencyKey?: string;
+  paymentMethod?: PaymentMethodId;
 }
 
 export interface StorefrontPaymentIntentResponse {
   clientSecret: string;
   paymentIntentId: string;
+  paymentReferenceId?: string;
+  paymentMethod: PaymentMethodId;
   amount: number;
   currency: string;
   status: string;

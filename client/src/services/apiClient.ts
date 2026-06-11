@@ -76,6 +76,13 @@ export class ApiClient {
     });
   }
 
+  async prepareStorefrontPayment(payload: StorefrontPaymentIntentRequest): Promise<StorefrontPaymentIntentResponse> {
+    return this.request<StorefrontPaymentIntentResponse>('/api/storefront/payments/prepare', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
   async orders(status = '', pageSize = 50): Promise<PagedResult<Order>> {
     const query = status ? `?status=${encodeURIComponent(status)}&page=1&pageSize=${pageSize}` : `?page=1&pageSize=${pageSize}`;
     return this.request<PagedResult<Order>>(`/api/orders${query}`);

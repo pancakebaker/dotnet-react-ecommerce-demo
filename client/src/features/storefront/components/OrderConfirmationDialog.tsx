@@ -1,12 +1,28 @@
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Download } from 'lucide-react';
+import { useState } from 'react';
+import { downloadStorefrontInvoice, type StorefrontInvoice } from '../helpers/storefrontInvoice';
 
 type OrderConfirmationDialogProps = {
   orderNumber: string;
+  invoice?: StorefrontInvoice;
   onConfirm: () => void;
 };
 
-export function OrderConfirmationDialog({ orderNumber, onConfirm }: OrderConfirmationDialogProps) {
+export function OrderConfirmationDialog({ orderNumber, invoice, onConfirm }: OrderConfirmationDialogProps) {
+  const [downloading, setDownloading] = useState(false);
+
   if (!orderNumber) return null;
+
+  async function downloadInvoice() {
+    if (!invoice) return;
+
+    setDownloading(true);
+    try {
+      await downloadStorefrontInvoice(invoice);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 px-4">
@@ -16,7 +32,20 @@ export function OrderConfirmationDialog({ orderNumber, onConfirm }: OrderConfirm
         <p className="mt-2 text-sm leading-6 text-slate-600">
           Order {orderNumber} has been placed successfully.
         </p>
-        <button className="focus-ring mt-5 w-full rounded-md bg-brand px-4 py-2 font-semibold text-white hover:bg-teal-800" onClick={onConfirm}>
+        {invoice && (
+          <button
+            className="focus-ring mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            disabled={downloading}
+            onClick={() => {
+              void downloadInvoice();
+            }}
+            type="button"
+          >
+            <Download className="h-4 w-4" />
+            {downloading ? 'Preparing invoice' : 'Download invoice'}
+          </button>
+        )}
+        <button className={`${invoice ? 'mt-3' : 'mt-5'} focus-ring w-full rounded-md border border-line px-4 py-2 font-semibold hover:bg-field`} onClick={onConfirm}>
           OK
         </button>
       </section>

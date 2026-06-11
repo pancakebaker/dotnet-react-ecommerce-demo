@@ -2,20 +2,19 @@ using Microsoft.EntityFrameworkCore;
 using EcommerceDemo.Api.Data;
 using EcommerceDemo.Api.Domain;
 using EcommerceDemo.Api.Dtos;
+using EcommerceDemo.Api.Services;
 
 namespace EcommerceDemo.Api.Endpoints;
 
 public static class OrderEndpoints
 {
-    private const decimal TaxRate = 0.12m;
-
     public static IEndpointRouteBuilder MapOrderEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/orders")
             .RequireAuthorization("StaffOrAdmin")
             .WithTags("Orders");
 
-        group.MapGet("/", async (string? status, int page, int pageSize, AppDbContext db) =>
+        group.MapGet("/", async (string? status, int page, int pageSize, AppDbContext db, OrderMapper orderMapper) =>
         {
             page = Math.Max(page, 1);
             pageSize = Math.Clamp(pageSize == 0 ? 10 : pageSize, 1, 50);
@@ -37,10 +36,10 @@ public static class OrderEndpoints
                 .Take(pageSize)
                 .ToListAsync();
 
-            return Results.Ok(new PagedResult<OrderResponse>(orders.Select(ToResponse).ToList(), page, pageSize, totalCount));
+            return Results.Ok(new PagedResult<OrderResponse>(orders.Select(orderMapper.ToResponse).ToList(), page, pageSize, totalCount));
         });
 
-        group.MapGet("/{id:guid}", async (Guid id, AppDbContext db) =>
+        group.MapGet("/{id:guid}", async (Guid id, AppDbContext db, OrderMapper orderMapper) =>
         {
             var order = await db.Orders
                 .AsNoTracking()
@@ -48,12 +47,21 @@ public static class OrderEndpoints
                 .Include(x => x.Items)
                 .SingleOrDefaultAsync(x => x.Id == id);
 
-            return order is null ? Results.NotFound() : Results.Ok(ToResponse(order));
+            return order is null ? Results.NotFound() : Results.Ok(orderMapper.ToResponse(order));
         });
 
-        group.MapPost("/", async (CreateOrderRequest request, AppDbContext db, HttpContext httpContext) =>
+        group.MapPost("/", async (
+            CreateOrderRequest request,
+            AppDbContext db,
+            HttpContext httpContext,
+            IHubSpotOrderSyncService hubSpot,
+            OrderItemFactory orderItemFactory,
+            OrderMapper orderMapper,
+            OrderNumberService orderNumbers,
+            OrderPricingService pricing,
+            CancellationToken cancellationToken) =>
         {
-            if (!await db.Customers.AnyAsync(customer => customer.Id == request.CustomerId))
+            if (!await db.Customers.AnyAsync(customer => customer.Id == request.CustomerId, cancellationToken))
             {
                 return Results.BadRequest(new { message = "Customer does not exist." });
             }
@@ -69,7 +77,9 @@ public static class OrderEndpoints
             }
 
             var productIds = request.Items.Select(item => item.ProductId).ToArray();
-            var products = await db.Products.Where(product => productIds.Contains(product.Id) && product.IsActive).ToDictionaryAsync(product => product.Id);
+            var products = await db.Products
+                .Where(product => productIds.Contains(product.Id) && product.IsActive)
+                .ToDictionaryAsync(product => product.Id, cancellationToken);
             if (products.Count != productIds.Distinct().Count())
             {
                 return Results.BadRequest(new { message = "One or more products are inactive or missing." });
@@ -77,32 +87,20 @@ public static class OrderEndpoints
 
             var order = new Order
             {
-                OrderNumber = await NextOrderNumber(db),
+                OrderNumber = await orderNumbers.NextAsync(cancellationToken),
                 CustomerId = request.CustomerId,
                 CreatedByUserId = CurrentUser.Id(httpContext.User),
                 Discount = Math.Max(0, request.Discount),
                 Status = OrderStatuses.Submitted
             };
 
-            foreach (var item in request.Items)
+            var selections = request.Items.Select(item => new OrderProductSelection(item.ProductId, item.Quantity)).ToList();
+            if (!orderItemFactory.TryAddItems(order, selections, products, out var itemError))
             {
-                if (item.Quantity <= 0 || item.Quantity > 1000)
-                {
-                    return Results.BadRequest(new { message = "Item quantity must be between 1 and 1,000." });
-                }
-
-                var product = products[item.ProductId];
-                order.Items.Add(new OrderItem
-                {
-                    ProductId = product.Id,
-                    ProductName = product.Name,
-                    Quantity = item.Quantity,
-                    UnitPrice = product.Price,
-                    LineTotal = decimal.Round(product.Price * item.Quantity, 2)
-                });
+                return Results.BadRequest(new { message = itemError });
             }
 
-            Recalculate(order);
+            pricing.Recalculate(order);
             db.Orders.Add(order);
             db.ActivityLogs.Add(new ActivityLog
             {
@@ -112,20 +110,40 @@ public static class OrderEndpoints
                 Description = $"Order {order.OrderNumber} was created.",
                 UserId = order.CreatedByUserId
             });
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(cancellationToken);
 
-            var created = await db.Orders.AsNoTracking().Include(x => x.Customer).Include(x => x.Items).SingleAsync(x => x.Id == order.Id);
-            return Results.Created($"/api/orders/{order.Id}", ToResponse(created));
+            var created = await db.Orders
+                .AsNoTracking()
+                .Include(x => x.Customer)
+                .Include(x => x.Items)
+                .SingleAsync(x => x.Id == order.Id, cancellationToken);
+            var hubSpotObjectId = await hubSpot.CreateOrderAsync(created, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(hubSpotObjectId))
+            {
+                order.HubSpotObjectId = hubSpotObjectId;
+                await db.SaveChangesAsync(cancellationToken);
+            }
+
+            return Results.Created($"/api/orders/{order.Id}", orderMapper.ToResponse(created));
         });
 
-        group.MapPatch("/{id:guid}/status", async (Guid id, UpdateOrderStatusRequest request, AppDbContext db, HttpContext httpContext) =>
+        group.MapPatch("/{id:guid}/status", async (
+            Guid id,
+            UpdateOrderStatusRequest request,
+            AppDbContext db,
+            HttpContext httpContext,
+            IHubSpotOrderSyncService hubSpot,
+            CancellationToken cancellationToken) =>
         {
             if (!OrderStatuses.All.Contains(request.Status))
             {
                 return Results.BadRequest(new { message = "Invalid order status." });
             }
 
-            var order = await db.Orders.FindAsync(id);
+            var order = await db.Orders
+                .Include(x => x.Customer)
+                .Include(x => x.Items)
+                .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
             if (order is null)
             {
                 return Results.NotFound();
@@ -141,41 +159,12 @@ public static class OrderEndpoints
                 Description = $"Order {order.OrderNumber} moved to {order.Status}.",
                 UserId = CurrentUser.Id(httpContext.User)
             });
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(cancellationToken);
+            await hubSpot.UpdateOrderAsync(order, cancellationToken);
 
             return Results.NoContent();
         });
 
         return app;
-    }
-
-    private static void Recalculate(Order order)
-    {
-        order.Subtotal = decimal.Round(order.Items.Sum(item => item.LineTotal), 2);
-        order.Tax = decimal.Round(order.Subtotal * TaxRate, 2);
-        order.Total = decimal.Round(order.Subtotal + order.Tax - order.Discount, 2);
-    }
-
-    private static async Task<string> NextOrderNumber(AppDbContext db)
-    {
-        var count = await db.Orders.CountAsync() + 1;
-        return $"OF-{DateTime.UtcNow:yyyyMMdd}-{count:0000}";
-    }
-
-    private static OrderResponse ToResponse(Order order)
-    {
-        return new OrderResponse(
-            order.Id,
-            order.OrderNumber,
-            order.CustomerId,
-            order.Customer?.Name ?? "Unknown customer",
-            order.Status,
-            order.Subtotal,
-            order.Tax,
-            order.Discount,
-            order.Total,
-            order.CreatedByUserId,
-            order.CreatedAt,
-            order.Items.Select(item => new OrderItemResponse(item.Id, item.ProductId, item.ProductName, item.Quantity, item.UnitPrice, item.LineTotal)).ToList());
     }
 }

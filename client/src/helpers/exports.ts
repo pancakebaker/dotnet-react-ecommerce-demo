@@ -1,5 +1,6 @@
 import type { Order, Product } from '../models';
 import { formatMoney } from './format';
+import { addPdfBrandHeader, addPdfPageNumbers, dateStamp, loadPdfTools, pdfTableDefaults, saveDatedPdf } from './pdf';
 
 export function downloadOrdersCsv(orders: Order[]) {
   const csv = buildOrdersCsv(orders);
@@ -37,22 +38,11 @@ export function buildOrdersCsv(orders: Order[]): string {
 }
 
 export async function downloadProductsPdf(products: Product[]) {
-  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-    import('jspdf'),
-    import('jspdf-autotable')
-  ]);
+  const { jsPDF, autoTable } = await loadPdfTools();
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   const generatedAt = new Date().toLocaleString();
 
-  doc.setFillColor(15, 118, 110);
-  doc.rect(0, 0, doc.internal.pageSize.getWidth(), 86, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.text('Ecommerce Demo Product Catalog', 40, 42);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.text(`Generated ${generatedAt}`, 40, 62);
+  addPdfBrandHeader(doc, 'Ecommerce Demo Product Catalog', `Generated ${generatedAt}`);
 
   autoTable(doc, {
     startY: 112,
@@ -65,23 +55,10 @@ export async function downloadProductsPdf(products: Product[]) {
       product.stockQuantity.toString(),
       product.isActive ? 'Active' : 'Inactive'
     ]),
+    ...pdfTableDefaults(),
     styles: {
-      font: 'helvetica',
-      fontSize: 9,
-      cellPadding: 8,
-      lineColor: [217, 222, 231],
-      lineWidth: 0.6,
+      ...pdfTableDefaults().styles,
       overflow: 'linebreak',
-      valign: 'middle'
-    },
-    headStyles: {
-      fillColor: [15, 118, 110],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-      halign: 'left'
-    },
-    alternateRowStyles: {
-      fillColor: [246, 247, 249]
     },
     columnStyles: {
       0: { cellWidth: 150 },
@@ -90,19 +67,12 @@ export async function downloadProductsPdf(products: Product[]) {
       3: { cellWidth: 75, halign: 'right' },
       4: { cellWidth: 65, halign: 'right' },
       5: { cellWidth: 75 }
-    },
-    margin: { left: 40, right: 40 }
+    }
   });
 
-  const pageCount = doc.getNumberOfPages();
-  for (let page = 1; page <= pageCount; page += 1) {
-    doc.setPage(page);
-    doc.setFontSize(9);
-    doc.setTextColor(100, 116, 139);
-    doc.text(`Page ${page} of ${pageCount}`, doc.internal.pageSize.getWidth() - 92, doc.internal.pageSize.getHeight() - 28);
-  }
+  addPdfPageNumbers(doc);
 
-  doc.save(`ecommerce-demo-products-${dateStamp()}.pdf`);
+  saveDatedPdf(doc, 'ecommerce-demo-products');
 }
 
 function escapeCsvCell(value: string): string {
@@ -119,8 +89,4 @@ function downloadTextFile(content: string, fileName: string, type: string) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
-}
-
-function dateStamp() {
-  return new Date().toISOString().slice(0, 10);
 }

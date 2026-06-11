@@ -59,6 +59,24 @@ export function CardPaymentPanel({
     );
   }
 
+  if (window.__ECOMMERCE_DEMO_E2E_PAYMENT_INTENT_ID__) {
+    return (
+      <div className="space-y-4">
+        <button
+          className="focus-ring flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
+          disabled={placing}
+          onClick={() => {
+            void onPlaceOrder(window.__ECOMMERCE_DEMO_E2E_PAYMENT_INTENT_ID__);
+          }}
+          type="button"
+        >
+          <CreditCard className="h-4 w-4" />
+          {placing ? 'Placing order' : 'Place order'}
+        </button>
+      </div>
+    );
+  }
+
   if (!stripePublishableKey) {
     return (
       <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">
@@ -81,20 +99,6 @@ export function CardPaymentPanel({
     <div className="space-y-4">
       {paymentError && (
         <p className="rounded-md bg-rose-50 p-3 text-sm text-rose-700">{paymentError}</p>
-      )}
-
-      {window.__ECOMMERCE_DEMO_E2E_PAYMENT_INTENT_ID__ && (
-        <button
-          className="focus-ring flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
-          disabled={placing}
-          onClick={() => {
-            void onPlaceOrder(window.__ECOMMERCE_DEMO_E2E_PAYMENT_INTENT_ID__);
-          }}
-          type="button"
-        >
-          <CreditCard className="h-4 w-4" />
-          {placing ? 'Placing order' : 'Place order'}
-        </button>
       )}
 
       {stripePromise && stripeOptions && paymentIntent && (

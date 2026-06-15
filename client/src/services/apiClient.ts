@@ -69,13 +69,6 @@ export class ApiClient {
     });
   }
 
-  async createStorefrontPaymentIntent(payload: StorefrontPaymentIntentRequest): Promise<StorefrontPaymentIntentResponse> {
-    return this.request<StorefrontPaymentIntentResponse>('/api/storefront/payments/create-intent', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-  }
-
   async prepareStorefrontPayment(payload: StorefrontPaymentIntentRequest): Promise<StorefrontPaymentIntentResponse> {
     return this.request<StorefrontPaymentIntentResponse>('/api/storefront/payments/prepare', {
       method: 'POST',

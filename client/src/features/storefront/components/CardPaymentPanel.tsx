@@ -12,7 +12,7 @@ type CardPaymentPanelProps = {
   paymentError: string;
   paymentIntent: StorefrontPaymentIntentResponse | null;
   placing: boolean;
-  onPlaceOrder: (paymentReferenceId?: string) => Promise<void>;
+  onPlaceOrder: (paymentIntentId?: string) => Promise<void>;
   onPaymentError: (message: string) => void;
 };
 
@@ -107,11 +107,11 @@ export function CardPaymentPanel({
             amountLabel={amountLabel}
             placing={placing}
             customerEmail={customer.email}
-            onPaymentResult={async (paymentReferenceId, paymentStatus) => {
-              if (!paymentReferenceId) return;
+            onPaymentResult={async (paymentIntentId, paymentStatus) => {
+              if (!paymentIntentId) return;
 
               if (paymentStatus === 'succeeded') {
-                await onPlaceOrder(paymentReferenceId);
+                await onPlaceOrder(paymentIntentId);
                 return;
               }
 

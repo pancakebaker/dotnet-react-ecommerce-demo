@@ -42,6 +42,7 @@ test('visitor can add a product, enter customer details, and place an order', as
     });
     expect(payload.items).toEqual([{ productId: 'product-scanner', quantity: 1 }]);
     expect(payload.paymentIntentId).toBe('pi_e2e_paid');
+    expect(payload.paymentReferenceId).toBeUndefined();
 
     await route.fulfill({
       status: 201,

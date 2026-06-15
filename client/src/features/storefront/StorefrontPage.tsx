@@ -57,7 +57,7 @@ export function StorefrontPage({ api, onSignIn }: StorefrontPageProps) {
     }
   }, [api, customer, hasCartItems, orderItems]);
 
-  async function placeOrder(paymentMethod: PaymentMethodId, paymentReferenceId?: string): Promise<string | null> {
+  async function placeOrder(paymentMethod: PaymentMethodId, paymentIntentId?: string): Promise<string | null> {
     const canPlaceOrder = hasCartItems && hasValidStorefrontCustomer(customer) && !placing;
     if (!canPlaceOrder) {
       setStatus('Enter customer details and add at least one product.');
@@ -71,8 +71,7 @@ export function StorefrontPage({ api, onSignIn }: StorefrontPageProps) {
         customer,
         items: orderItems,
         paymentMethod,
-        paymentReferenceId,
-        paymentIntentId: paymentMethod === 'card' ? paymentReferenceId : undefined
+        paymentIntentId: paymentMethod === 'card' ? paymentIntentId : undefined
       });
       return order.orderNumber;
     } catch (error) {

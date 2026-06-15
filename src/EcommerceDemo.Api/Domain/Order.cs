@@ -13,7 +13,6 @@ public sealed class Order
     public decimal Total { get; set; }
     public string? PaymentProvider { get; set; }
     public string? PaymentReferenceId { get; set; }
-    public string? StripePaymentIntentId { get; set; }
     public string? HubSpotObjectId { get; set; }
     public Guid CreatedByUserId { get; set; }
     public User? CreatedByUser { get; set; }

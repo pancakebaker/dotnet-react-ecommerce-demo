@@ -89,7 +89,7 @@ function App() {
             </div>
             <div className="flex items-center gap-3">
               <span className="hidden text-sm text-slate-600 sm:inline">{user.firstName} {user.lastName}</span>
-              <button className="focus-ring rounded-md border border-line p-2 hover:bg-field" onClick={logout} title="Log out">
+              <button className="focus-ring grid h-11 w-11 place-items-center rounded-md border border-line hover:bg-field" onClick={logout} title="Log out" aria-label="Log out" type="button">
                 <LogOut className="h-4 w-4" />
               </button>
             </div>
@@ -98,8 +98,9 @@ function App() {
             {visibleNavItems.map(item => (
               <button
                 key={item.id}
-                className={`focus-ring rounded-md px-3 py-2 text-sm ${activeView === item.id ? 'bg-teal-50 text-brand' : 'bg-white'}`}
+                className={`focus-ring min-h-10 flex-none rounded-md px-3 py-2 text-sm ${activeView === item.id ? 'bg-teal-50 text-brand' : 'bg-white'}`}
                 onClick={() => setView(item.id)}
+                aria-current={activeView === item.id ? 'page' : undefined}
               >
                 {item.label}
               </button>

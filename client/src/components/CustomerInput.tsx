@@ -30,12 +30,14 @@ export function CustomerInput({
   hint
 }: CustomerInputProps) {
   const messageId = `${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-message`;
+  const inputId = `${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-input`;
 
   return (
-    <label className="block text-sm font-medium">
-      {label}
+    <div>
+      <label className="block text-sm font-medium" htmlFor={inputId}>{label}</label>
       <input
-        className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2"
+        id={inputId}
+        className="focus-ring mt-1 min-h-11 w-full rounded-md border border-line px-3 py-2"
         type={type}
         value={value}
         required={required}
@@ -51,6 +53,6 @@ export function CustomerInput({
       />
       {error && <span id={messageId} className="mt-1 block text-xs font-medium text-rose-700">{error}</span>}
       {!error && hint && <span id={messageId} className="mt-1 block text-xs text-slate-500">{hint}</span>}
-    </label>
+    </div>
   );
 }

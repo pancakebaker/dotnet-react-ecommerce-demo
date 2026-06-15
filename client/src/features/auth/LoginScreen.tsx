@@ -31,7 +31,7 @@ export function LoginScreen({ api, onAuthenticated, onBack }: LoginScreenProps) 
   return (
     <main className="min-h-screen bg-field lg:grid lg:grid-cols-2">
       <section className="grid min-h-screen place-items-center p-4 sm:p-8" aria-labelledby="login-heading">
-        <form onSubmit={submit} className="w-full max-w-md rounded-lg border border-line bg-white p-6 shadow-sm">
+        <form onSubmit={submit} className="w-full max-w-md rounded-lg border border-line bg-white p-5 shadow-sm sm:p-6">
           <button
             type="button"
             className="focus-ring mb-4 inline-flex items-center gap-2 rounded-md border border-line px-3 py-2 text-sm hover:bg-field"
@@ -45,13 +45,13 @@ export function LoginScreen({ api, onAuthenticated, onBack }: LoginScreenProps) 
           <div className="mt-6 space-y-4">
             <label className="block text-sm font-medium">
               Email
-              <input className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" type="email" maxLength={255} autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} />
+              <input className="focus-ring mt-1 min-h-11 w-full rounded-md border border-line px-3 py-2" type="email" maxLength={255} autoComplete="email" required value={email} onChange={event => setEmail(event.target.value)} />
             </label>
             <label className="block text-sm font-medium">
               Password
               <span className="relative mt-1 block">
                 <input
-                  className="focus-ring w-full rounded-md border border-line py-2 pl-3 pr-11"
+                  className="focus-ring min-h-11 w-full rounded-md border border-line py-2 pl-3 pr-12"
                   type={showPassword ? 'text' : 'password'}
                   maxLength={128}
                   autoComplete="current-password"
@@ -60,7 +60,7 @@ export function LoginScreen({ api, onAuthenticated, onBack }: LoginScreenProps) 
                 />
                 <button
                   type="button"
-                  className="focus-ring absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-slate-500 hover:bg-field hover:text-ink"
+                  className="focus-ring absolute right-1.5 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-md text-slate-500 hover:bg-field hover:text-ink"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   title={showPassword ? 'Hide password' : 'Show password'}
                   aria-pressed={showPassword}
@@ -71,8 +71,8 @@ export function LoginScreen({ api, onAuthenticated, onBack }: LoginScreenProps) 
               </span>
             </label>
           </div>
-          {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-          <button className="focus-ring mt-6 w-full rounded-md bg-brand px-4 py-2 font-medium text-white hover:bg-teal-800">Sign in</button>
+          {error && <p className="mt-3 text-sm text-red-700" role="alert">{error}</p>}
+          <button className="focus-ring mt-6 min-h-11 w-full rounded-md bg-brand px-4 py-2 font-medium text-white hover:bg-teal-800">Sign in</button>
         </form>
       </section>
       <section className="relative hidden min-h-screen overflow-hidden lg:block" aria-label="Ecommerce Demo staff workspace visual">

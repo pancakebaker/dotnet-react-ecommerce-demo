@@ -27,7 +27,7 @@ export function CustomerStep({ customer, canContinue, setCustomer, onBack, onNex
       <label className="mt-4 block text-sm font-medium">
         Address
         <textarea
-          className="focus-ring mt-1 min-h-24 w-full rounded-md border border-line px-3 py-2"
+          className="focus-ring mt-1 min-h-28 w-full rounded-md border border-line px-3 py-2"
           maxLength={500}
           value={customer.address ?? ''}
           onChange={event => setCustomer(current => ({ ...current, address: event.target.value }))}
@@ -41,10 +41,10 @@ export function CustomerStep({ customer, canContinue, setCustomer, onBack, onNex
         />
       </div>
       <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <button className="focus-ring rounded-md border border-line px-4 py-2 font-medium hover:bg-field" onClick={onBack}>
+        <button className="focus-ring min-h-11 rounded-md border border-line px-4 py-2 font-medium hover:bg-field" onClick={onBack} type="button">
           Back to cart
         </button>
-        <button className="focus-ring rounded-md bg-brand px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400" disabled={!canContinue} onClick={onNext}>
+        <button className="focus-ring min-h-11 rounded-md bg-brand px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400" disabled={!canContinue} onClick={onNext} type="button">
           Review order
         </button>
       </div>

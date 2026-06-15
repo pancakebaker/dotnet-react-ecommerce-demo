@@ -81,8 +81,9 @@ export function ReviewStep({
         <ReviewCustomer customer={customer} />
         <ReviewItems cart={cart} />
         <section className="rounded-md border border-line p-4">
-          <h2 className="font-semibold">Payment method</h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <fieldset>
+            <legend className="font-semibold">Payment method</legend>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {paymentMethods.map(method => {
               const isSelected = method.id === selectedPaymentMethod;
               return (
@@ -106,7 +107,8 @@ export function ReviewStep({
                 </label>
               );
             })}
-          </div>
+            </div>
+          </fieldset>
 
           <div className="mt-4">
             {paymentMethod.render({
@@ -122,9 +124,9 @@ export function ReviewStep({
           </div>
         </section>
       </div>
-      {status && <p className="mt-4 rounded-md bg-rose-50 p-3 text-sm text-rose-700">{status}</p>}
+      {status && <p className="mt-4 rounded-md bg-rose-50 p-3 text-sm text-rose-700" role="alert">{status}</p>}
       <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <button className="focus-ring rounded-md border border-line px-4 py-2 font-medium hover:bg-field" onClick={onBack}>
+        <button className="focus-ring min-h-11 rounded-md border border-line px-4 py-2 font-medium hover:bg-field" onClick={onBack} type="button">
           Back to customer details
         </button>
       </div>
@@ -136,8 +138,8 @@ function ReviewCustomer({ customer }: { customer: StorefrontCustomer }) {
   return (
     <section className="rounded-md border border-line p-4">
       <h2 className="font-semibold">Customer</h2>
-      <p className="mt-2 text-sm text-slate-700">{customer.name}</p>
-      <p className="text-sm text-slate-500">{customer.companyName || 'No company'} - {customer.email}</p>
+      <p className="mt-2 break-words text-sm text-slate-700">{customer.name}</p>
+      <p className="break-words text-sm text-slate-500">{customer.companyName || 'No company'} - {customer.email}</p>
       {customer.phone && <p className="text-sm text-slate-500">{customer.phone}</p>}
       {customer.address && <p className="text-sm text-slate-500">{customer.address}</p>}
     </section>
@@ -151,7 +153,7 @@ function ReviewItems({ cart }: { cart: CartItem[] }) {
       <div className="mt-3 space-y-2">
         {cart.map(item => (
           <div key={item.id} className="flex justify-between gap-3 text-sm">
-            <span>{item.quantity} x {item.name}</span>
+            <span className="min-w-0 break-words">{item.quantity} x {item.name}</span>
             <span className="font-medium">{formatMoney(item.price * item.quantity)}</span>
           </div>
         ))}

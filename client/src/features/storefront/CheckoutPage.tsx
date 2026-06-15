@@ -107,12 +107,12 @@ export function CheckoutPage({
   return (
     <main className="min-h-screen bg-field text-ink">
       <header className="border-b border-line bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
-          <button className="focus-ring flex items-center gap-2 font-semibold" onClick={onBackToStore}>
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <button className="focus-ring flex min-h-11 min-w-0 items-center gap-2 rounded-md px-1 font-semibold" onClick={onBackToStore} type="button">
             <ShoppingCart className="h-5 w-5 text-brand" />
-            Continue shopping
+            <span className="truncate">Continue shopping</span>
           </button>
-          <span className="text-sm font-semibold text-brand">{formatMoney(total)}</span>
+          <span className="flex-none text-sm font-semibold text-brand">{formatMoney(total)}</span>
         </div>
       </header>
 
@@ -125,7 +125,7 @@ export function CheckoutPage({
         />
 
         <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <section className="rounded-lg border border-line bg-white p-5 shadow-sm">
+          <section className="min-w-0 rounded-lg border border-line bg-white p-4 shadow-sm sm:p-5">
             {activeStep.render(checkoutContext)}
           </section>
 

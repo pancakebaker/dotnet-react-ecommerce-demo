@@ -18,9 +18,11 @@ export function CheckoutProgress({ activeStep, canOpenStep, onStepChange, steps 
           return (
             <li key={item.id}>
               <button
-                className={`focus-ring flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-semibold ${active ? 'bg-teal-50 text-brand' : 'text-slate-600 hover:bg-field'} disabled:cursor-not-allowed disabled:opacity-50`}
+                className={`focus-ring flex min-h-12 w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-semibold ${active ? 'bg-teal-50 text-brand' : 'text-slate-600 hover:bg-field'} disabled:cursor-not-allowed disabled:opacity-50`}
                 disabled={!enabled}
                 onClick={() => onStepChange(item.id)}
+                aria-current={active ? 'step' : undefined}
+                type="button"
               >
                 <span className={`grid h-7 w-7 place-items-center rounded-full border text-xs ${active ? 'border-brand bg-brand text-white' : 'border-line bg-white'}`}>
                   {index + 1}

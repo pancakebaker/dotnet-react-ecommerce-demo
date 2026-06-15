@@ -68,11 +68,12 @@ export function StripePaymentForm({ amountLabel, placing, customerEmail, onPayme
       <button
         className="focus-ring w-full rounded-md bg-brand px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:bg-slate-400"
         disabled={!stripe || !elements || submitting || placing}
+        aria-busy={submitting || placing}
         type="submit"
       >
         {submitting || placing ? "Processing..." : `Pay ${amountLabel} and place order`}
       </button>
-      {message && <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">{message}</p>}
+      {message && <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800" role="status">{message}</p>}
     </form>
   );
 }

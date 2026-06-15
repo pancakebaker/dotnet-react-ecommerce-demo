@@ -36,7 +36,7 @@ public static class DashboardEndpoints
                 completedOrders,
                 monthlyRevenue,
                 recentActivity));
-        });
+        }).RequirePermission("dashboard", "view");
 
         return app;
     }

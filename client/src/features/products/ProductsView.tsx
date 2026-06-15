@@ -3,16 +3,44 @@ import { Download } from 'lucide-react';
 import { Toolbar } from '../../components/Toolbar';
 import { downloadProductsPdf } from '../../helpers/exports';
 import { formatMoney } from '../../helpers/format';
-import type { PagedResult, Product } from '../../models';
+import type { PagedResult, Product, Role } from '../../models';
+import { canAccess, canViewField } from '../../permissions/permissions';
 import type { ApiClient } from '../../services/apiClient';
 
 type ProductsViewProps = {
   api: ApiClient;
+  role: Role;
 };
 
-export function ProductsView({ api }: ProductsViewProps) {
+type ProductColumn = {
+  field: keyof Product;
+  label: string;
+  align?: 'right';
+  render: (product: Product) => string | JSX.Element;
+};
+
+const productColumns: ProductColumn[] = [
+  { field: 'name', label: 'Product', render: product => product.name },
+  { field: 'sku', label: 'SKU', render: product => <span className="font-mono text-xs font-semibold text-slate-600">{product.sku}</span> },
+  { field: 'description', label: 'Description', render: product => product.description ?? '-' },
+  { field: 'price', label: 'Price', align: 'right', render: product => formatMoney(product.price) },
+  { field: 'stockQuantity', label: 'Stock', align: 'right', render: product => product.stockQuantity.toString() },
+  {
+    field: 'isActive',
+    label: 'Status',
+    render: product => (
+      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${product.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+        {product.isActive ? 'Active' : 'Inactive'}
+      </span>
+    )
+  }
+];
+
+export function ProductsView({ api, role }: ProductsViewProps) {
   const [products, setProducts] = useState<PagedResult<Product> | null>(null);
   const [search, setSearch] = useState('');
+  const visibleColumns = productColumns.filter(column => canViewField(role, 'products', column.field));
+  const canExportProducts = canAccess(role, 'products', 'export');
 
   useEffect(() => {
     api.products('').then(setProducts).catch(() => setProducts(null));
@@ -30,14 +58,16 @@ export function ProductsView({ api }: ProductsViewProps) {
             <p className="text-sm font-medium text-teal-100">Inventory catalog</p>
             <h2 className="mt-1 text-xl font-semibold">Products</h2>
           </div>
-          <button
-            className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-semibold text-brand hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={(products?.items.length ?? 0) === 0}
-            onClick={() => downloadProductsPdf(products?.items ?? [])}
-          >
-            <Download className="h-4 w-4" />
-            Download PDF
-          </button>
+          {canExportProducts && (
+            <button
+              className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-semibold text-brand hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={(products?.items.length ?? 0) === 0}
+              onClick={() => downloadProductsPdf(products?.items ?? [])}
+            >
+              <Download className="h-4 w-4" />
+              Download PDF
+            </button>
+          )}
         </div>
         <div className="border-b border-line bg-white p-4">
           <Toolbar search={search} setSearch={setSearch} onSearch={refresh} />
@@ -46,27 +76,19 @@ export function ProductsView({ api }: ProductsViewProps) {
           <table className="min-w-full text-sm">
             <thead className="bg-slate-100 text-left text-xs uppercase text-slate-600">
               <tr>
-                <th className="px-4 py-3 font-semibold">Product</th>
-                <th className="px-4 py-3 font-semibold">SKU</th>
-                <th className="px-4 py-3 font-semibold">Description</th>
-                <th className="px-4 py-3 text-right font-semibold">Price</th>
-                <th className="px-4 py-3 text-right font-semibold">Stock</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
+                {visibleColumns.map(column => (
+                  <th key={column.field} className={`px-4 py-3 font-semibold ${column.align === 'right' ? 'text-right' : ''}`}>{column.label}</th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {(products?.items ?? []).map((product, index) => (
                 <tr key={product.id} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                  <td className="whitespace-nowrap px-4 py-3 font-medium">{product.name}</td>
-                  <td className="whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold text-slate-600">{product.sku}</td>
-                  <td className="min-w-64 px-4 py-3 text-slate-600">{product.description ?? '-'}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right font-medium">{formatMoney(product.price)}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right">{product.stockQuantity}</td>
-                  <td className="whitespace-nowrap px-4 py-3">
-                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${product.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                      {product.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
+                  {visibleColumns.map(column => (
+                    <td key={column.field} className={`px-4 py-3 ${column.field === 'description' ? 'min-w-64 text-slate-600' : 'whitespace-nowrap'} ${column.field === 'name' ? 'font-medium' : ''} ${column.align === 'right' ? 'text-right' : ''}`}>
+                      {column.render(product)}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>

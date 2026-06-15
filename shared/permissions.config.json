@@ -1,0 +1,110 @@
+{
+  "roles": ["Admin", "Staff", "Anonymous"],
+  "resources": {
+    "dashboard": {
+      "actions": {
+        "view": ["Admin", "Staff"]
+      },
+      "fields": {
+        "totalCustomers": { "view": ["Admin", "Staff"], "edit": [] },
+        "totalOrders": { "view": ["Admin", "Staff"], "edit": [] },
+        "pendingOrders": { "view": ["Admin", "Staff"], "edit": [] },
+        "completedOrders": { "view": ["Admin", "Staff"], "edit": [] },
+        "monthlyRevenue": { "view": ["Admin", "Staff"], "edit": [] },
+        "recentActivity": { "view": ["Admin", "Staff"], "edit": [] }
+      }
+    },
+    "products": {
+      "actions": {
+        "view": ["Admin", "Staff"],
+        "export": ["Admin", "Staff"],
+        "create": ["Admin"],
+        "update": ["Admin"],
+        "delete": ["Admin"]
+      },
+      "fields": {
+        "id": { "view": ["Admin", "Staff"], "edit": [] },
+        "name": { "view": ["Admin", "Staff", "Anonymous"], "edit": ["Admin"] },
+        "sku": { "view": ["Admin", "Staff"], "edit": ["Admin"] },
+        "description": { "view": ["Admin", "Staff", "Anonymous"], "edit": ["Admin"] },
+        "price": { "view": ["Admin", "Staff", "Anonymous"], "edit": ["Admin"] },
+        "stockQuantity": { "view": ["Admin", "Staff"], "edit": ["Admin"] },
+        "isActive": { "view": ["Admin", "Staff"], "edit": ["Admin"] },
+        "createdAt": { "view": ["Admin"], "edit": [] },
+        "updatedAt": { "view": ["Admin"], "edit": [] }
+      }
+    },
+    "customers": {
+      "actions": {
+        "view": ["Admin", "Staff"],
+        "create": ["Admin", "Staff"],
+        "update": ["Admin", "Staff"],
+        "delete": ["Admin"]
+      },
+      "fields": {
+        "id": { "view": ["Admin", "Staff"], "edit": [] },
+        "name": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "companyName": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "email": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "phone": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "address": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "createdAt": { "view": ["Admin", "Staff"], "edit": [] },
+        "updatedAt": { "view": ["Admin"], "edit": [] }
+      }
+    },
+    "orders": {
+      "actions": {
+        "view": ["Admin", "Staff"],
+        "export": ["Admin", "Staff"],
+        "create": ["Admin", "Staff"],
+        "update": ["Admin", "Staff"],
+        "cancel": ["Admin", "Staff"],
+        "approve": ["Admin", "Staff"]
+      },
+      "fields": {
+        "id": { "view": ["Admin", "Staff"], "edit": [] },
+        "orderNumber": { "view": ["Admin", "Staff"], "edit": [] },
+        "customerId": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "customerName": { "view": ["Admin", "Staff"], "edit": [] },
+        "status": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "subtotal": { "view": ["Admin", "Staff"], "edit": [] },
+        "tax": { "view": ["Admin", "Staff"], "edit": [] },
+        "discount": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "total": { "view": ["Admin", "Staff"], "edit": [] },
+        "createdByUserId": { "view": ["Admin", "Staff"], "edit": [] },
+        "createdAt": { "view": ["Admin", "Staff"], "edit": [] },
+        "items": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "paymentProvider": { "view": ["Admin"], "edit": [] },
+        "paymentReferenceId": { "view": [], "edit": [] },
+        "hubSpotObjectId": { "view": [], "edit": [] }
+      }
+    },
+    "profile": {
+      "actions": {
+        "view": ["Admin", "Staff"],
+        "update": ["Admin", "Staff"]
+      },
+      "fields": {
+        "id": { "view": ["Admin", "Staff"], "edit": [] },
+        "firstName": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "lastName": { "view": ["Admin", "Staff"], "edit": ["Admin", "Staff"] },
+        "email": { "view": ["Admin", "Staff"], "edit": [] },
+        "role": { "view": ["Admin", "Staff"], "edit": [] }
+      }
+    },
+    "storefront": {
+      "actions": {
+        "browse": ["Admin", "Staff", "Anonymous"],
+        "preparePayment": ["Admin", "Staff", "Anonymous"],
+        "createOrder": ["Admin", "Staff", "Anonymous"]
+      },
+      "fields": {
+        "customer": { "view": ["Admin", "Staff", "Anonymous"], "edit": ["Admin", "Staff", "Anonymous"] },
+        "items": { "view": ["Admin", "Staff", "Anonymous"], "edit": ["Admin", "Staff", "Anonymous"] },
+        "paymentMethod": { "view": ["Admin", "Staff", "Anonymous"], "edit": ["Admin", "Staff", "Anonymous"] },
+        "paymentIntentId": { "view": [], "edit": ["Admin", "Staff", "Anonymous"] },
+        "paymentReferenceId": { "view": [], "edit": [] }
+      }
+    }
+  }
+}

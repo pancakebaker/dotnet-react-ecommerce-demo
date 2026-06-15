@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using EcommerceDemo.Api.Data;
 using EcommerceDemo.Api.Domain;
 using EcommerceDemo.Api.Dtos;
+using EcommerceDemo.Api.Services.Permissions;
 using EcommerceDemo.Api.Validation;
 
 namespace EcommerceDemo.Api.Endpoints;
@@ -38,16 +39,23 @@ public static class CustomerEndpoints
                 .ToListAsync();
 
             return Results.Ok(new PagedResult<CustomerResponse>(items, page, pageSize, totalCount));
-        });
+        }).RequirePermission("customers", "view");
 
         group.MapGet("/{id:guid}", async (Guid id, AppDbContext db) =>
         {
             var customer = await db.Customers.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id);
             return customer is null ? Results.NotFound() : Results.Ok(ToResponse(customer));
-        });
+        }).RequirePermission("customers", "view");
 
-        group.MapPost("/", async (UpsertCustomerRequest request, AppDbContext db, HttpContext httpContext) =>
+        group.MapPost("/", async (HttpContext httpContext, AppDbContext db, IPermissionService permissions, CancellationToken cancellationToken) =>
         {
+            var payload = await PermissionPayloadReader.ReadAsync<UpsertCustomerRequest>(httpContext, permissions, "customers", cancellationToken);
+            if (!payload.IsValid)
+            {
+                return payload.Error!;
+            }
+
+            var request = payload.Value!;
             if (!InputValidation.TryCustomer(request.Name, request.CompanyName, request.Email, request.Phone, request.Address, out var input, out var errors))
             {
                 return Results.ValidationProblem(errors);
@@ -67,10 +75,17 @@ public static class CustomerEndpoints
             await db.SaveChangesAsync();
 
             return Results.Created($"/api/customers/{customer.Id}", ToResponse(customer));
-        });
+        }).RequirePermission("customers", "create");
 
-        group.MapPut("/{id:guid}", async (Guid id, UpsertCustomerRequest request, AppDbContext db, HttpContext httpContext) =>
+        group.MapPut("/{id:guid}", async (Guid id, HttpContext httpContext, AppDbContext db, IPermissionService permissions, CancellationToken cancellationToken) =>
         {
+            var payload = await PermissionPayloadReader.ReadAsync<UpsertCustomerRequest>(httpContext, permissions, "customers", cancellationToken);
+            if (!payload.IsValid)
+            {
+                return payload.Error!;
+            }
+
+            var request = payload.Value!;
             if (!InputValidation.TryCustomer(request.Name, request.CompanyName, request.Email, request.Phone, request.Address, out var input, out var errors))
             {
                 return Results.ValidationProblem(errors);
@@ -92,7 +107,7 @@ public static class CustomerEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(ToResponse(customer));
-        });
+        }).RequirePermission("customers", "update");
 
         group.MapDelete("/{id:guid}", async (Guid id, AppDbContext db, HttpContext httpContext) =>
         {
@@ -107,7 +122,7 @@ public static class CustomerEndpoints
             await db.SaveChangesAsync();
 
             return Results.NoContent();
-        }).RequireAdmin();
+        }).RequirePermission("customers", "delete");
 
         return app;
     }

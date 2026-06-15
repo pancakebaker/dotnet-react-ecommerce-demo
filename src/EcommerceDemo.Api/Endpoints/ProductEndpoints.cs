@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using EcommerceDemo.Api.Data;
 using EcommerceDemo.Api.Domain;
 using EcommerceDemo.Api.Dtos;
+using EcommerceDemo.Api.Services.Permissions;
 using EcommerceDemo.Api.Validation;
 
 namespace EcommerceDemo.Api.Endpoints;
@@ -34,10 +35,17 @@ public static class ProductEndpoints
                 .ToListAsync();
 
             return Results.Ok(new PagedResult<ProductResponse>(items, page, pageSize, totalCount));
-        });
+        }).RequirePermission("products", "view");
 
-        group.MapPost("/", async (UpsertProductRequest request, AppDbContext db, HttpContext httpContext) =>
+        group.MapPost("/", async (HttpContext httpContext, AppDbContext db, IPermissionService permissions, CancellationToken cancellationToken) =>
         {
+            var payload = await PermissionPayloadReader.ReadAsync<UpsertProductRequest>(httpContext, permissions, "products", cancellationToken);
+            if (!payload.IsValid)
+            {
+                return payload.Error!;
+            }
+
+            var request = payload.Value!;
             if (!InputValidation.TryProduct(request.Name, request.Sku, request.Description, request.Price, request.StockQuantity, request.IsActive, out var input, out var errors))
             {
                 return Results.ValidationProblem(errors);
@@ -62,10 +70,17 @@ public static class ProductEndpoints
             await db.SaveChangesAsync();
 
             return Results.Created($"/api/products/{product.Id}", ToResponse(product));
-        }).RequireAdmin();
+        }).RequirePermission("products", "create");
 
-        group.MapPut("/{id:guid}", async (Guid id, UpsertProductRequest request, AppDbContext db, HttpContext httpContext) =>
+        group.MapPut("/{id:guid}", async (Guid id, HttpContext httpContext, AppDbContext db, IPermissionService permissions, CancellationToken cancellationToken) =>
         {
+            var payload = await PermissionPayloadReader.ReadAsync<UpsertProductRequest>(httpContext, permissions, "products", cancellationToken);
+            if (!payload.IsValid)
+            {
+                return payload.Error!;
+            }
+
+            var request = payload.Value!;
             if (!InputValidation.TryProduct(request.Name, request.Sku, request.Description, request.Price, request.StockQuantity, request.IsActive, out var input, out var errors))
             {
                 return Results.ValidationProblem(errors);
@@ -88,7 +103,7 @@ public static class ProductEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(ToResponse(product));
-        }).RequireAdmin();
+        }).RequirePermission("products", "update");
 
         group.MapDelete("/{id:guid}", async (Guid id, AppDbContext db, HttpContext httpContext) =>
         {
@@ -103,7 +118,7 @@ public static class ProductEndpoints
             await db.SaveChangesAsync();
 
             return Results.NoContent();
-        }).RequireAdmin();
+        }).RequirePermission("products", "delete");
 
         return app;
     }

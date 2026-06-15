@@ -3,6 +3,8 @@ using EcommerceDemo.Api.Data;
 using EcommerceDemo.Api.Domain;
 using EcommerceDemo.Api.Dtos;
 using EcommerceDemo.Api.Services;
+using EcommerceDemo.Api.Services.Permissions;
+using EcommerceDemo.Api.Validation;
 
 namespace EcommerceDemo.Api.Endpoints;
 
@@ -37,7 +39,7 @@ public static class OrderEndpoints
                 .ToListAsync();
 
             return Results.Ok(new PagedResult<OrderResponse>(orders.Select(orderMapper.ToResponse).ToList(), page, pageSize, totalCount));
-        });
+        }).RequirePermission("orders", "view");
 
         group.MapGet("/{id:guid}", async (Guid id, AppDbContext db, OrderMapper orderMapper) =>
         {
@@ -48,12 +50,12 @@ public static class OrderEndpoints
                 .SingleOrDefaultAsync(x => x.Id == id);
 
             return order is null ? Results.NotFound() : Results.Ok(orderMapper.ToResponse(order));
-        });
+        }).RequirePermission("orders", "view");
 
         group.MapPost("/", async (
-            CreateOrderRequest request,
-            AppDbContext db,
             HttpContext httpContext,
+            AppDbContext db,
+            IPermissionService permissions,
             IHubSpotOrderSyncService hubSpot,
             OrderItemFactory orderItemFactory,
             OrderMapper orderMapper,
@@ -61,6 +63,13 @@ public static class OrderEndpoints
             OrderPricingService pricing,
             CancellationToken cancellationToken) =>
         {
+            var payload = await PermissionPayloadReader.ReadAsync<CreateOrderRequest>(httpContext, permissions, "orders", cancellationToken);
+            if (!payload.IsValid)
+            {
+                return payload.Error!;
+            }
+
+            var request = payload.Value!;
             if (!await db.Customers.AnyAsync(customer => customer.Id == request.CustomerId, cancellationToken))
             {
                 return Results.BadRequest(new { message = "Customer does not exist." });
@@ -125,19 +134,32 @@ public static class OrderEndpoints
             }
 
             return Results.Created($"/api/orders/{order.Id}", orderMapper.ToResponse(created));
-        });
+        }).RequirePermission("orders", "create");
 
         group.MapPatch("/{id:guid}/status", async (
             Guid id,
-            UpdateOrderStatusRequest request,
-            AppDbContext db,
             HttpContext httpContext,
+            AppDbContext db,
+            IPermissionService permissions,
             IHubSpotOrderSyncService hubSpot,
             CancellationToken cancellationToken) =>
         {
+            var payload = await PermissionPayloadReader.ReadAsync<UpdateOrderStatusRequest>(httpContext, permissions, "orders", cancellationToken);
+            if (!payload.IsValid)
+            {
+                return payload.Error!;
+            }
+
+            var request = payload.Value!;
             if (!OrderStatuses.All.Contains(request.Status))
             {
                 return Results.BadRequest(new { message = "Invalid order status." });
+            }
+
+            var role = permissions.RoleFor(httpContext.User);
+            if (!permissions.CanAccess(role, "orders", ActionForStatus(request.Status)))
+            {
+                return Results.Forbid();
             }
 
             var order = await db.Orders
@@ -166,5 +188,15 @@ public static class OrderEndpoints
         });
 
         return app;
+    }
+
+    private static string ActionForStatus(string status)
+    {
+        return status switch
+        {
+            OrderStatuses.Cancelled => "cancel",
+            OrderStatuses.Completed => "approve",
+            _ => "update"
+        };
     }
 }

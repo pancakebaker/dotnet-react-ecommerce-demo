@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using EcommerceDemo.Api.Data;
 using EcommerceDemo.Api.Endpoints;
 using EcommerceDemo.Api.Services;
+using EcommerceDemo.Api.Services.Permissions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,6 +61,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
+builder.Services.AddSingleton<IPermissionService, PermissionService>();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<OrderNumberService>();
 builder.Services.AddSingleton<OrderItemFactory>();

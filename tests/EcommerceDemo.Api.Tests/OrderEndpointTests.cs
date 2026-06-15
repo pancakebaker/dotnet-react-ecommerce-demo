@@ -55,4 +55,26 @@ public sealed class OrderEndpointTests(ApiTestFactory factory) : IClassFixture<A
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Order_Create_Rejects_Hidden_Payment_Fields()
+    {
+        await _client.AuthenticateAsync("staff@ecommerce-demo.test");
+
+        var customers = await _client.GetFromJsonAsync<PagedResult<CustomerResponse>>("/api/customers?page=1&pageSize=1");
+        var products = await _client.GetFromJsonAsync<PagedResult<ProductResponse>>("/api/products?page=1&pageSize=1");
+
+        var customer = Assert.Single(customers!.Items);
+        var product = Assert.Single(products!.Items);
+
+        var response = await _client.PostAsJsonAsync("/api/orders", new
+        {
+            customerId = customer.Id,
+            discount = 0m,
+            items = new[] { new { productId = product.Id, quantity = 1 } },
+            paymentReferenceId = "pi_hidden_reference"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

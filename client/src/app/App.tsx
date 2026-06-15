@@ -8,6 +8,7 @@ import { ProductsView } from '../features/products/ProductsView';
 import { ProfileView } from '../features/profile/ProfileView';
 import { StorefrontPage } from '../features/storefront/StorefrontPage';
 import type { BackOfficeView, User } from '../models';
+import { canAccess } from '../permissions/permissions';
 import { ApiClient } from '../services/apiClient';
 import { navItems } from './navigation';
 
@@ -54,8 +55,10 @@ function App() {
       : <StorefrontPage api={api} onSignIn={() => setShowLogin(true)} />;
   }
 
-  const activeItem = navItems.find(item => item.id === view);
+  const visibleNavItems = navItems.filter(item => canAccess(user.role, item.resource, item.action));
+  const activeItem = visibleNavItems.find(item => item.id === view) ?? visibleNavItems[0];
   const ActiveIcon = activeItem?.icon ?? BarChart3;
+  const activeView = activeItem?.id ?? 'profile';
 
   return (
     <div className="min-h-screen bg-field text-ink">
@@ -64,10 +67,10 @@ function App() {
           <span className="text-lg font-semibold">Ecommerce Demo</span>
         </div>
         <nav className="space-y-1 p-3">
-          {navItems.map(item => (
+          {visibleNavItems.map(item => (
             <button
               key={item.id}
-              className={`focus-ring flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm ${view === item.id ? 'bg-teal-50 text-brand' : 'hover:bg-field'}`}
+              className={`focus-ring flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm ${activeView === item.id ? 'bg-teal-50 text-brand' : 'hover:bg-field'}`}
               onClick={() => setView(item.id)}
             >
               <item.icon className="h-4 w-4" />
@@ -92,10 +95,10 @@ function App() {
             </div>
           </div>
           <nav className="flex gap-1 overflow-x-auto border-t border-line px-3 py-2 lg:hidden">
-            {navItems.map(item => (
+            {visibleNavItems.map(item => (
               <button
                 key={item.id}
-                className={`focus-ring rounded-md px-3 py-2 text-sm ${view === item.id ? 'bg-teal-50 text-brand' : 'bg-white'}`}
+                className={`focus-ring rounded-md px-3 py-2 text-sm ${activeView === item.id ? 'bg-teal-50 text-brand' : 'bg-white'}`}
                 onClick={() => setView(item.id)}
               >
                 {item.label}
@@ -105,11 +108,11 @@ function App() {
         </header>
 
         <main className="mx-auto max-w-7xl p-4 sm:p-6">
-          {view === 'dashboard' && <DashboardView api={api} />}
-          {view === 'customers' && <CustomersView api={api} />}
-          {view === 'products' && <ProductsView api={api} />}
-          {view === 'orders' && <OrdersView api={api} />}
-          {view === 'profile' && <ProfileView user={user} api={api} />}
+          {activeView === 'dashboard' && <DashboardView api={api} />}
+          {activeView === 'customers' && <CustomersView api={api} role={user.role} />}
+          {activeView === 'products' && <ProductsView api={api} role={user.role} />}
+          {activeView === 'orders' && <OrdersView api={api} role={user.role} />}
+          {activeView === 'profile' && <ProfileView user={user} api={api} />}
         </main>
       </div>
     </div>

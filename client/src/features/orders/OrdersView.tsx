@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { CheckCircle2, Download } from 'lucide-react';
 import { downloadOrdersCsv } from '../../helpers/exports';
 import { formatMoney } from '../../helpers/format';
-import type { Order, OrderStatus, PagedResult } from '../../models';
+import type { Order, OrderStatus, PagedResult, Role } from '../../models';
+import { canAccess, canEditField } from '../../permissions/permissions';
 import type { ApiClient } from '../../services/apiClient';
 
 type OrdersViewProps = {
   api: ApiClient;
+  role: Role;
 };
 
 const nextStatuses: OrderStatus[] = ['Processing', 'Completed', 'Cancelled'];
@@ -40,9 +42,11 @@ const statusStyles: Record<OrderStatus, { badge: string; dot: string; card: stri
   }
 };
 
-export function OrdersView({ api }: OrdersViewProps) {
+export function OrdersView({ api, role }: OrdersViewProps) {
   const [orders, setOrders] = useState<PagedResult<Order> | null>(null);
   const [status, setStatus] = useState('');
+  const canExportOrders = canAccess(role, 'orders', 'export');
+  const canUpdateOrderStatus = canEditField(role, 'orders', 'status');
 
   async function refresh(nextStatus = status) {
     setOrders(await api.orders(nextStatus));
@@ -71,14 +75,16 @@ export function OrdersView({ api }: OrdersViewProps) {
           <option value="">All statuses</option>
           {filterStatuses.map(item => <option key={item} value={item}>{item}</option>)}
         </select>
-        <button
-          className="focus-ring inline-flex items-center justify-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm font-medium hover:bg-field disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={(orders?.items.length ?? 0) === 0}
-          onClick={() => downloadOrdersCsv(orders?.items ?? [])}
-        >
-          <Download className="h-4 w-4" />
-          Download CSV
-        </button>
+        {canExportOrders && (
+          <button
+            className="focus-ring inline-flex items-center justify-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm font-medium hover:bg-field disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={(orders?.items.length ?? 0) === 0}
+            onClick={() => downloadOrdersCsv(orders?.items ?? [])}
+          >
+            <Download className="h-4 w-4" />
+            Download CSV
+          </button>
+        )}
       </div>
       <div className="grid gap-4">
         {(orders?.items ?? []).map(order => {
@@ -100,22 +106,30 @@ export function OrdersView({ api }: OrdersViewProps) {
                 </div>
                 <div className="text-lg font-semibold">{formatMoney(order.total)}</div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {nextStatuses.map(next => (
-                  <button
-                    key={next}
-                    className="focus-ring inline-flex items-center gap-2 rounded-md border border-line px-3 py-2 text-sm hover:bg-field"
-                    onClick={() => update(order.id, next)}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    {next}
-                  </button>
-                ))}
-              </div>
+              {canUpdateOrderStatus && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {nextStatuses.filter(next => canAccess(role, 'orders', actionForStatus(next))).map(next => (
+                    <button
+                      key={next}
+                      className="focus-ring inline-flex items-center gap-2 rounded-md border border-line px-3 py-2 text-sm hover:bg-field"
+                      onClick={() => update(order.id, next)}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {next}
+                    </button>
+                  ))}
+                </div>
+              )}
             </article>
           );
         })}
       </div>
     </div>
   );
+}
+
+function actionForStatus(status: OrderStatus) {
+  if (status === 'Cancelled') return 'cancel';
+  if (status === 'Completed') return 'approve';
+  return 'update';
 }

@@ -54,6 +54,24 @@ public sealed class CustomerEndpointTests(ApiTestFactory factory) : IClassFixtur
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Customer_Create_Rejects_ReadOnly_Fields()
+    {
+        await AuthenticateAsync("staff@ecommerce-demo.test", "Password123!");
+
+        var response = await _client.PostAsJsonAsync("/api/customers", new
+        {
+            id = Guid.NewGuid(),
+            name = "Luna Office Supply",
+            companyName = "Luna Co",
+            email = "hello@luna.test",
+            phone = "+1 555-0199",
+            address = "9 Paper Trail"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     private async Task AuthenticateAsync(string email, string password)
     {
         var login = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(email, password));

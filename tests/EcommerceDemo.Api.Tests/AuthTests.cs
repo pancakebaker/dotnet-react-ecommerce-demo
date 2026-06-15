@@ -24,8 +24,23 @@ public sealed class AuthTests(ApiTestFactory factory) : IClassFixture<ApiTestFac
     }
 
     [Fact]
-    public async Task Register_Normalizes_Role_And_Returns_Jwt()
+    public async Task Register_Requires_Authentication()
     {
+        var response = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(
+            "Ava",
+            "Morgan",
+            $"new-user-{Guid.NewGuid():N}@example.test",
+            "Apply123!",
+            " staff "));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Admin_Can_Register_Staff_User()
+    {
+        await _client.AuthenticateAsync();
+
         var email = $"new-user-{Guid.NewGuid():N}@example.test";
         var response = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(
             "Ava",
@@ -46,6 +61,8 @@ public sealed class AuthTests(ApiTestFactory factory) : IClassFixture<ApiTestFac
     [Fact]
     public async Task Register_Rejects_Weak_Password_Invalid_Role_And_Incomplete_Email_Domain()
     {
+        await _client.AuthenticateAsync();
+
         var response = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(
             "Ava",
             "Morgan",
@@ -65,6 +82,8 @@ public sealed class AuthTests(ApiTestFactory factory) : IClassFixture<ApiTestFac
     [Fact]
     public async Task Register_Rejects_Public_Admin_Role()
     {
+        await _client.AuthenticateAsync();
+
         var response = await _client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(
             "Ava",
             "Morgan",

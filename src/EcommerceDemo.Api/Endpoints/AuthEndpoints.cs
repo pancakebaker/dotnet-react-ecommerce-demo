@@ -43,7 +43,7 @@ public static class AuthEndpoints
             await db.SaveChangesAsync();
 
             return Results.Created($"/api/users/{user.Id}", ToAuthResponse(user, jwtTokenService));
-        });
+        }).RequireAdmin();
 
         group.MapPost("/login", async (
             LoginRequest request,

@@ -37,10 +37,9 @@ public sealed class StorefrontCheckoutService(
             return StorefrontOrderSubmissionResult.Failed(paymentMethod.Error);
         }
 
-        var paymentReferenceId = request.PaymentReferenceId ?? request.PaymentIntentId;
         var paymentValidation = await ValidatePaymentAsync(
             paymentMethod.Result!,
-            paymentReferenceId,
+            request.PaymentIntentId,
             cart,
             cancellationToken);
         if (paymentValidation.Error is not null)
@@ -164,9 +163,9 @@ public sealed class StorefrontCheckoutService(
                 payment.PaymentMethod,
                 payment.PaymentReferenceId));
         }
-        catch (PaymentProviderException ex)
+        catch (PaymentProviderException)
         {
-            return StorefrontPaymentPreparationResult.Failed(StorefrontCheckoutError.BadGateway(ex.Message));
+            return StorefrontPaymentPreparationResult.Failed(StorefrontCheckoutError.BadGateway("Payment provider could not prepare the payment."));
         }
     }
 
@@ -216,9 +215,9 @@ public sealed class StorefrontCheckoutService(
 
             return StorefrontPaymentValidationResult.Succeeded(result);
         }
-        catch (PaymentProviderException ex)
+        catch (PaymentProviderException)
         {
-            return StorefrontPaymentValidationResult.Failed(StorefrontCheckoutError.BadRequest(ex.Message));
+            return StorefrontPaymentValidationResult.Failed(StorefrontCheckoutError.BadRequest("Payment could not be verified."));
         }
     }
 

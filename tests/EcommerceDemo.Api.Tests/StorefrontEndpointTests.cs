@@ -108,4 +108,36 @@ public sealed class StorefrontEndpointTests(ApiTestFactory factory) : IClassFixt
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Storefront_Checkout_Rejects_Unexpected_Payment_Reference_Field()
+    {
+        var products = await _client.GetFromJsonAsync<List<ProductResponse>>("/api/storefront/products");
+        var product = Assert.Single(products!.Where(item => item.IsActive).Take(1));
+
+        var response = await _client.PostAsJsonAsync("/api/storefront/orders", new
+        {
+            customer = new
+            {
+                name = "Front Door Buyer",
+                companyName = "Public Demo Co",
+                email = "buyer@public-demo.test",
+                phone = "+1 555-0188",
+                address = "15 Checkout Lane"
+            },
+            items = new[] { new { productId = product.Id, quantity = 1 } },
+            paymentMethod = PaymentMethodIds.CashOnDelivery,
+            paymentReferenceId = "legacy-reference"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Storefront_Product_Search_Rejects_Overlong_Terms()
+    {
+        var response = await _client.GetAsync($"/api/storefront/products?search={new string('a', 101)}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

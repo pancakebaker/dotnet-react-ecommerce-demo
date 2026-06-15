@@ -67,7 +67,7 @@ public sealed class StripePaymentService(IOptions<StripeOptions> options) : IPay
         }
         catch (StripeException ex)
         {
-            throw new PaymentProviderException(ex.StripeError?.Message ?? "Stripe could not create a payment intent.", ex);
+            throw new PaymentProviderException("Payment provider could not create a payment intent.", ex);
         }
     }
 
@@ -86,7 +86,7 @@ public sealed class StripePaymentService(IOptions<StripeOptions> options) : IPay
         }
         catch (StripeException ex)
         {
-            throw new PaymentProviderException(ex.StripeError?.Message ?? "Payment verification failed.", ex);
+            throw new PaymentProviderException("Payment verification failed.", ex);
         }
     }
 

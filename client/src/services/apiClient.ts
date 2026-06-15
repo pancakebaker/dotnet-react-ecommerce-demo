@@ -122,12 +122,16 @@ async function buildApiError(response: Response): Promise<ApiError> {
 
   if (!contentType.includes('json')) {
     const text = await response.text();
-    return new ApiError(text || fallback, response.status);
+    return new ApiError(response.status >= 500 ? 'The server could not complete the request. Please try again.' : text || fallback, response.status);
   }
 
   try {
     const problem = await response.json() as ApiProblemDetails;
     const validationErrors = Object.values(problem.errors ?? {}).flat();
+    if (response.status >= 500 && validationErrors.length === 0) {
+      return new ApiError('The server could not complete the request. Please try again.', response.status);
+    }
+
     const message = validationErrors.length > 0
       ? validationErrors.join(' ')
       : problem.detail ?? problem.message ?? problem.title ?? fallback;

@@ -21,6 +21,11 @@ if (builder.Environment.IsProduction() &&
     throw new InvalidOperationException("Production deployments must configure a strong Jwt__Secret outside source control.");
 }
 
+if (builder.Environment.IsProduction() && builder.Configuration["Database:Provider"]?.Equals("InMemory", StringComparison.OrdinalIgnoreCase) == true)
+{
+    throw new InvalidOperationException("Production deployments must use a persistent database provider.");
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     var provider = builder.Configuration["Database:Provider"] ?? "InMemory";
@@ -143,6 +148,12 @@ app.Use(async (context, next) =>
 
     await next();
 });
+
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
 
 if (app.Environment.IsDevelopment())
 {

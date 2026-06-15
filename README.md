@@ -69,7 +69,7 @@ flowchart LR
 - Checkout supports Visa/Mastercard card entry through Stripe and cash on delivery with an invoice PDF download after order placement.
 - Optional HubSpot order sync that creates/updates CRM deals from storefront and staff-created orders.
 - SEO metadata, Open Graph/Twitter tags, structured data, valid `robots.txt`, favicon, responsive WebP/JPEG images, and no-JavaScript fallback content.
-- JWT login/register with protected API routes, Admin/Staff authorization, and a staff login password visibility toggle.
+- JWT login with protected API routes, admin-gated staff registration, Admin/Staff authorization, and a staff login password visibility toggle.
 - Dashboard metrics and D3 visualizations for order momentum, product stock, revenue, and recent activity.
 - Customer CRUD with search, pagination, full contact fields, and client/server validation for email, phone, length limits, and unsafe input.
 - Product CRUD with SKU, price, stock quantity, and active/inactive status.
@@ -200,7 +200,7 @@ When using Stripe test mode, Stripe's standard test card `4242 4242 4242 4242` w
 - `POST /api/storefront/payments/prepare`
 - `POST /api/storefront/payments/create-intent`
 - `POST /api/storefront/orders`
-- `POST /api/auth/register`
+- `POST /api/auth/register` (Admin only)
 - `POST /api/auth/login`
 - `GET /api/dashboard/summary`
 - `GET|POST|PUT|DELETE /api/customers`

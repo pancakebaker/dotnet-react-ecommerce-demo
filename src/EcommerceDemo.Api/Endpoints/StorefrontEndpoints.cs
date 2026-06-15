@@ -8,16 +8,38 @@ namespace EcommerceDemo.Api.Endpoints;
 
 public static class StorefrontEndpoints
 {
+    private static readonly IReadOnlySet<string> CheckoutFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "customer",
+        "items",
+        "paymentIntentId",
+        "paymentMethod",
+        "paymentReferenceId"
+    };
+
+    private static readonly IReadOnlySet<string> PaymentIntentFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "customer",
+        "items",
+        "idempotencyKey",
+        "paymentMethod"
+    };
+
     public static IEndpointRouteBuilder MapStorefrontEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/storefront").WithTags("Storefront");
 
         group.MapGet("/products", async (string? search, AppDbContext db) =>
         {
-            var query = db.Products.AsNoTracking().Where(product => product.IsActive);
-            if (!string.IsNullOrWhiteSpace(search))
+            if (!InputValidation.TrySearch(search, out var searchInput, out var searchErrors))
             {
-                var term = search.Trim().ToLowerInvariant();
+                return Results.ValidationProblem(searchErrors);
+            }
+
+            var query = db.Products.AsNoTracking().Where(product => product.IsActive);
+            if (!string.IsNullOrWhiteSpace(searchInput.Term))
+            {
+                var term = searchInput.Term.ToLowerInvariant();
                 query = query.Where(product =>
                     product.Name.ToLower().Contains(term) ||
                     product.Sku.ToLower().Contains(term) ||
@@ -40,10 +62,37 @@ public static class StorefrontEndpoints
         }).AllowAnonymous();
 
         group.MapPost("/orders", async (
-            StorefrontCheckoutRequest request,
+            HttpContext httpContext,
             StorefrontCheckoutService checkout,
             CancellationToken cancellationToken) =>
         {
+            var payload = await PermissionPayloadReader.ReadAllowedFieldsAsync<StorefrontCheckoutRequest>(httpContext, CheckoutFields, cancellationToken);
+            if (!payload.IsValid)
+            {
+                return payload.Error!;
+            }
+
+            var request = payload.Value!;
+            var payloadError = ValidateCheckoutPayload(request.Customer, request.Items);
+            if (payloadError is not null)
+            {
+                return payloadError;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.PaymentReferenceId))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    [nameof(request.PaymentReferenceId)] = ["Use paymentIntentId for card payments."]
+                });
+            }
+
+            if (!InputValidation.TryPaymentReference(request.PaymentIntentId, out var paymentIntentId, out var paymentReferenceErrors))
+            {
+                return Results.ValidationProblem(paymentReferenceErrors);
+            }
+
+            request = request with { PaymentIntentId = paymentIntentId, PaymentReferenceId = null };
             if (!InputValidation.TryCustomer(
                 request.Customer.Name,
                 request.Customer.CompanyName,
@@ -66,18 +115,32 @@ public static class StorefrontEndpoints
         }).AllowAnonymous();
 
         group.MapPost("/payments/create-intent", async (
-            StorefrontPaymentIntentRequest request,
+            HttpContext httpContext,
             StorefrontCheckoutService checkout,
             CancellationToken cancellationToken) =>
         {
+            var payload = await PermissionPayloadReader.ReadAllowedFieldsAsync<StorefrontPaymentIntentRequest>(httpContext, PaymentIntentFields, cancellationToken);
+            if (!payload.IsValid)
+            {
+                return payload.Error!;
+            }
+
+            var request = payload.Value!;
             return await PreparePaymentAsync(request with { PaymentMethod = PaymentMethodIds.Card }, checkout, cancellationToken);
         }).AllowAnonymous();
 
         group.MapPost("/payments/prepare", async (
-            StorefrontPaymentIntentRequest request,
+            HttpContext httpContext,
             StorefrontCheckoutService checkout,
             CancellationToken cancellationToken) =>
         {
+            var payload = await PermissionPayloadReader.ReadAllowedFieldsAsync<StorefrontPaymentIntentRequest>(httpContext, PaymentIntentFields, cancellationToken);
+            if (!payload.IsValid)
+            {
+                return payload.Error!;
+            }
+
+            var request = payload.Value!;
             return await PreparePaymentAsync(request, checkout, cancellationToken);
         }).AllowAnonymous();
 
@@ -89,6 +152,18 @@ public static class StorefrontEndpoints
         StorefrontCheckoutService checkout,
         CancellationToken cancellationToken)
     {
+        var payloadError = ValidateCheckoutPayload(request.Customer, request.Items);
+        if (payloadError is not null)
+        {
+            return payloadError;
+        }
+
+        if (!InputValidation.TryIdempotencyKey(request.IdempotencyKey, out var idempotencyKey, out var idempotencyErrors))
+        {
+            return Results.ValidationProblem(idempotencyErrors);
+        }
+
+        request = request with { IdempotencyKey = idempotencyKey };
         if (!InputValidation.TryCustomer(
             request.Customer.Name,
             request.Customer.CompanyName,
@@ -108,6 +183,23 @@ public static class StorefrontEndpoints
         }
 
         return Results.Ok(result.Payment);
+    }
+
+    private static IResult? ValidateCheckoutPayload(
+        StorefrontCustomerRequest? customer,
+        IReadOnlyCollection<StorefrontOrderItemRequest>? items)
+    {
+        if (customer is null)
+        {
+            return Results.BadRequest(new { message = "Customer details are required." });
+        }
+
+        if (items is null)
+        {
+            return Results.BadRequest(new { message = "Order items are required." });
+        }
+
+        return null;
     }
 
     private static IResult ToCheckoutErrorResult(StorefrontCheckoutError error)

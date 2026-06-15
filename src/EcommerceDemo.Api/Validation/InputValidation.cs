@@ -9,6 +9,7 @@ public sealed record SanitizedProductInput(string Name, string Sku, string? Desc
 public sealed record SanitizedUserInput(string FirstName, string LastName, string Email, string Password, string Role);
 public sealed record SanitizedLoginInput(string Email, string Password);
 public sealed record SanitizedProfileInput(string FirstName, string LastName);
+public sealed record SanitizedSearchInput(string? Term);
 
 public static partial class InputValidation
 {
@@ -20,6 +21,9 @@ public static partial class InputValidation
     private const int AddressMaxLength = 500;
     private const int ProductDescriptionMaxLength = 1000;
     private const int SkuMaxLength = 80;
+    private const int SearchMaxLength = 100;
+    private const int IdempotencyKeyMaxLength = 128;
+    private const int PaymentReferenceMaxLength = 120;
     private const int PasswordMinLength = 8;
     private const int PasswordMaxLength = 128;
 
@@ -158,6 +162,50 @@ public static partial class InputValidation
         var cleanLastName = RequiredPersonName(lastName, nameof(lastName), "Last name", errors);
 
         input = new SanitizedProfileInput(cleanFirstName, cleanLastName);
+        return errors.Count == 0;
+    }
+
+    public static bool TrySearch(
+        string? search,
+        out SanitizedSearchInput input,
+        out Dictionary<string, string[]> errors)
+    {
+        errors = [];
+
+        var clean = OptionalText(search, nameof(search), "Search", SearchMaxLength, errors);
+        input = new SanitizedSearchInput(clean);
+        return errors.Count == 0;
+    }
+
+    public static bool TryIdempotencyKey(
+        string? idempotencyKey,
+        out string? cleanIdempotencyKey,
+        out Dictionary<string, string[]> errors)
+    {
+        errors = [];
+        cleanIdempotencyKey = OptionalText(idempotencyKey, nameof(idempotencyKey), "Idempotency key", IdempotencyKeyMaxLength, errors);
+
+        if (!string.IsNullOrWhiteSpace(cleanIdempotencyKey) && !SafeTokenPattern().IsMatch(cleanIdempotencyKey))
+        {
+            AddError(errors, nameof(idempotencyKey), "Idempotency key contains invalid characters.");
+        }
+
+        return errors.Count == 0;
+    }
+
+    public static bool TryPaymentReference(
+        string? paymentReference,
+        out string? cleanPaymentReference,
+        out Dictionary<string, string[]> errors)
+    {
+        errors = [];
+        cleanPaymentReference = OptionalText(paymentReference, nameof(paymentReference), "Payment reference", PaymentReferenceMaxLength, errors);
+
+        if (!string.IsNullOrWhiteSpace(cleanPaymentReference) && !SafeTokenPattern().IsMatch(cleanPaymentReference))
+        {
+            AddError(errors, nameof(paymentReference), "Payment reference contains invalid characters.");
+        }
+
         return errors.Count == 0;
     }
 
@@ -358,4 +406,7 @@ public static partial class InputValidation
 
     [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.CultureInvariant)]
     private static partial Regex EmailPattern();
+
+    [GeneratedRegex(@"^[A-Za-z0-9_.:-]+$", RegexOptions.CultureInvariant)]
+    private static partial Regex SafeTokenPattern();
 }

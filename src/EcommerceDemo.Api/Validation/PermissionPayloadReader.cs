@@ -51,4 +51,50 @@ public static class PermissionPayloadReader
                 : new PermissionPayload<T>(payload, null);
         }
     }
+
+    public static async Task<PermissionPayload<T>> ReadAllowedFieldsAsync<T>(
+        HttpContext httpContext,
+        IReadOnlySet<string> allowedFields,
+        CancellationToken cancellationToken = default)
+    {
+        JsonDocument document;
+
+        try
+        {
+            document = await JsonDocument.ParseAsync(httpContext.Request.Body, cancellationToken: cancellationToken);
+        }
+        catch (JsonException)
+        {
+            return new PermissionPayload<T>(default, Results.BadRequest(new { message = "Request body must be valid JSON." }));
+        }
+
+        using (document)
+        {
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return new PermissionPayload<T>(default, Results.BadRequest(new { message = "Request body must be a JSON object." }));
+            }
+
+            var unexpectedFields = document.RootElement
+                .EnumerateObject()
+                .Select(property => property.Name)
+                .Where(field => !allowedFields.Contains(field))
+                .ToArray();
+
+            if (unexpectedFields.Length > 0)
+            {
+                var errors = unexpectedFields.ToDictionary(
+                    field => field,
+                    field => new[] { $"The '{field}' field is not allowed." },
+                    StringComparer.OrdinalIgnoreCase);
+
+                return new PermissionPayload<T>(default, Results.ValidationProblem(errors));
+            }
+
+            var payload = document.RootElement.Deserialize<T>(JsonOptions);
+            return payload is null
+                ? new PermissionPayload<T>(default, Results.BadRequest(new { message = "Request body could not be read." }))
+                : new PermissionPayload<T>(payload, null);
+        }
+    }
 }

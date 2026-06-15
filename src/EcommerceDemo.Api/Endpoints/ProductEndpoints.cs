@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using EcommerceDemo.Api.Data;
 using EcommerceDemo.Api.Domain;
 using EcommerceDemo.Api.Dtos;
+using EcommerceDemo.Api.Services;
 using EcommerceDemo.Api.Services.Permissions;
 using EcommerceDemo.Api.Validation;
 
@@ -37,7 +39,7 @@ public static class ProductEndpoints
             return Results.Ok(new PagedResult<ProductResponse>(items, page, pageSize, totalCount));
         }).RequirePermission("products", "view");
 
-        group.MapPost("/", async (HttpContext httpContext, AppDbContext db, IPermissionService permissions, CancellationToken cancellationToken) =>
+        group.MapPost("/", async (HttpContext httpContext, AppDbContext db, IMemoryCache cache, IPermissionService permissions, CancellationToken cancellationToken) =>
         {
             var payload = await PermissionPayloadReader.ReadAsync<UpsertProductRequest>(httpContext, permissions, "products", cancellationToken);
             if (!payload.IsValid)
@@ -68,11 +70,12 @@ public static class ProductEndpoints
             db.Products.Add(product);
             AddLog(db, product.Id, "Created", $"Product {product.Sku} was created.", CurrentUser.Id(httpContext.User));
             await db.SaveChangesAsync();
+            cache.Remove(StorefrontCacheKeys.ActiveProducts);
 
             return Results.Created($"/api/products/{product.Id}", ToResponse(product));
         }).RequirePermission("products", "create");
 
-        group.MapPut("/{id:guid}", async (Guid id, HttpContext httpContext, AppDbContext db, IPermissionService permissions, CancellationToken cancellationToken) =>
+        group.MapPut("/{id:guid}", async (Guid id, HttpContext httpContext, AppDbContext db, IMemoryCache cache, IPermissionService permissions, CancellationToken cancellationToken) =>
         {
             var payload = await PermissionPayloadReader.ReadAsync<UpsertProductRequest>(httpContext, permissions, "products", cancellationToken);
             if (!payload.IsValid)
@@ -101,11 +104,12 @@ public static class ProductEndpoints
             product.UpdatedAt = DateTimeOffset.UtcNow;
             AddLog(db, product.Id, "Updated", $"Product {product.Sku} was updated.", CurrentUser.Id(httpContext.User));
             await db.SaveChangesAsync();
+            cache.Remove(StorefrontCacheKeys.ActiveProducts);
 
             return Results.Ok(ToResponse(product));
         }).RequirePermission("products", "update");
 
-        group.MapDelete("/{id:guid}", async (Guid id, AppDbContext db, HttpContext httpContext) =>
+        group.MapDelete("/{id:guid}", async (Guid id, AppDbContext db, IMemoryCache cache, HttpContext httpContext) =>
         {
             var product = await db.Products.FindAsync(id);
             if (product is null)
@@ -116,6 +120,7 @@ public static class ProductEndpoints
             db.Products.Remove(product);
             AddLog(db, product.Id, "Deleted", $"Product {product.Sku} was deleted.", CurrentUser.Id(httpContext.User));
             await db.SaveChangesAsync();
+            cache.Remove(StorefrontCacheKeys.ActiveProducts);
 
             return Results.NoContent();
         }).RequirePermission("products", "delete");

@@ -67,6 +67,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
 builder.Services.AddSingleton<IPermissionService, PermissionService>();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<OrderNumberService>();
 builder.Services.AddSingleton<OrderItemFactory>();

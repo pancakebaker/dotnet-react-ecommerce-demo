@@ -99,6 +99,7 @@ public sealed class StorefrontCheckoutService(
             .AsNoTracking()
             .Include(x => x.Customer)
             .Include(x => x.Items)
+            .AsSplitQuery()
             .SingleAsync(x => x.Id == order.Id, cancellationToken);
         var hubSpotObjectId = await hubSpot.CreateOrderAsync(created, cancellationToken);
         if (!string.IsNullOrWhiteSpace(hubSpotObjectId))
@@ -258,6 +259,7 @@ public sealed class StorefrontCheckoutService(
 
         var productIds = items.Select(item => item.ProductId).Distinct().ToArray();
         var products = await db.Products
+            .AsNoTracking()
             .Where(product => productIds.Contains(product.Id) && product.IsActive)
             .ToDictionaryAsync(product => product.Id, cancellationToken);
 

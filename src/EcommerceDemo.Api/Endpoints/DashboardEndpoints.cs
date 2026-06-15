@@ -21,9 +21,11 @@ public static class DashboardEndpoints
             var pendingOrders = await db.Orders.CountAsync(order => order.Status != OrderStatuses.Completed && order.Status != OrderStatuses.Cancelled);
             var completedOrders = await db.Orders.CountAsync(order => order.Status == OrderStatuses.Completed);
             var monthlyRevenue = await db.Orders
+                .AsNoTracking()
                 .Where(order => order.CreatedAt >= monthStart && order.Status != OrderStatuses.Cancelled)
                 .SumAsync(order => order.Total);
             var recentActivity = await db.ActivityLogs
+                .AsNoTracking()
                 .OrderByDescending(log => log.CreatedAt)
                 .Take(8)
                 .Select(log => new ActivityResponse(log.EntityType, log.EntityId, log.Action, log.Description, log.CreatedAt))

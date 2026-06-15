@@ -24,8 +24,15 @@ declare global {
 }
 
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 const paymentIntentClientSecretPattern = /^pi_[^_]+_secret_/;
+let stripePromise: ReturnType<typeof loadStripe> | null = null;
+
+function getStripePromise() {
+  if (!stripePublishableKey) return null;
+
+  stripePromise ??= loadStripe(stripePublishableKey);
+  return stripePromise;
+}
 
 export function CardPaymentPanel({
   amountLabel,
@@ -52,6 +59,7 @@ export function CardPaymentPanel({
       }
     };
   }, [paymentIntent?.clientSecret]);
+  const stripe = paymentIntent && stripeOptions ? getStripePromise() : null;
 
   if (window.__ECOMMERCE_DEMO_SCREENSHOTS__) {
     return (
@@ -108,8 +116,8 @@ export function CardPaymentPanel({
         </p>
       )}
 
-      {stripePromise && stripeOptions && paymentIntent && (
-        <Elements key={paymentIntent.clientSecret} stripe={stripePromise} options={stripeOptions}>
+      {stripe && stripeOptions && paymentIntent && (
+        <Elements key={paymentIntent.clientSecret} stripe={stripe} options={stripeOptions}>
           <StripePaymentForm
             amountLabel={amountLabel}
             placing={placing}

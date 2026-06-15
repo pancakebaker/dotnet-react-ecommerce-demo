@@ -24,6 +24,7 @@ public static class OrderEndpoints
                 .AsNoTracking()
                 .Include(order => order.Customer)
                 .Include(order => order.Items)
+                .AsSplitQuery()
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(status))
@@ -47,6 +48,7 @@ public static class OrderEndpoints
                 .AsNoTracking()
                 .Include(x => x.Customer)
                 .Include(x => x.Items)
+                .AsSplitQuery()
                 .SingleOrDefaultAsync(x => x.Id == id);
 
             return order is null ? Results.NotFound() : Results.Ok(orderMapper.ToResponse(order));
@@ -87,6 +89,7 @@ public static class OrderEndpoints
 
             var productIds = request.Items.Select(item => item.ProductId).ToArray();
             var products = await db.Products
+                .AsNoTracking()
                 .Where(product => productIds.Contains(product.Id) && product.IsActive)
                 .ToDictionaryAsync(product => product.Id, cancellationToken);
             if (products.Count != productIds.Distinct().Count())
@@ -125,6 +128,7 @@ public static class OrderEndpoints
                 .AsNoTracking()
                 .Include(x => x.Customer)
                 .Include(x => x.Items)
+                .AsSplitQuery()
                 .SingleAsync(x => x.Id == order.Id, cancellationToken);
             var hubSpotObjectId = await hubSpot.CreateOrderAsync(created, cancellationToken);
             if (!string.IsNullOrWhiteSpace(hubSpotObjectId))

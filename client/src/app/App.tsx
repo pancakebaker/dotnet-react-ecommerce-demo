@@ -1,11 +1,6 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { BarChart3, LogOut } from 'lucide-react';
-import { LoginScreen } from '../features/auth/LoginScreen';
-import { CustomersView } from '../features/customers/CustomersView';
-import { DashboardView } from '../features/dashboard/DashboardView';
-import { OrdersView } from '../features/orders/OrdersView';
-import { ProductsView } from '../features/products/ProductsView';
-import { ProfileView } from '../features/profile/ProfileView';
+import { LoadingState } from '../components/LoadingState';
 import { StorefrontPage } from '../features/storefront/StorefrontPage';
 import type { BackOfficeView, User } from '../models';
 import { canAccess } from '../permissions/permissions';
@@ -14,6 +9,13 @@ import { navItems } from './navigation';
 
 const tokenStorageKey = 'ecommerce-demo.token';
 const userStorageKey = 'ecommerce-demo.user';
+
+const LoginScreen = lazy(() => import('../features/auth/LoginScreen').then(module => ({ default: module.LoginScreen })));
+const CustomersView = lazy(() => import('../features/customers/CustomersView').then(module => ({ default: module.CustomersView })));
+const DashboardView = lazy(() => import('../features/dashboard/DashboardView').then(module => ({ default: module.DashboardView })));
+const OrdersView = lazy(() => import('../features/orders/OrdersView').then(module => ({ default: module.OrdersView })));
+const ProductsView = lazy(() => import('../features/products/ProductsView').then(module => ({ default: module.ProductsView })));
+const ProfileView = lazy(() => import('../features/profile/ProfileView').then(module => ({ default: module.ProfileView })));
 
 function readStoredUser(): User | null {
   const raw = localStorage.getItem(userStorageKey);
@@ -51,7 +53,11 @@ function App() {
 
   if (!token || !user) {
     return showLogin
-      ? <LoginScreen api={api} onAuthenticated={handleAuthenticated} onBack={() => setShowLogin(false)} />
+      ? (
+          <Suspense fallback={<LoadingState />}>
+            <LoginScreen api={api} onAuthenticated={handleAuthenticated} onBack={() => setShowLogin(false)} />
+          </Suspense>
+        )
       : <StorefrontPage api={api} onSignIn={() => setShowLogin(true)} />;
   }
 
@@ -109,11 +115,13 @@ function App() {
         </header>
 
         <main className="mx-auto max-w-7xl p-4 sm:p-6">
-          {activeView === 'dashboard' && <DashboardView api={api} />}
-          {activeView === 'customers' && <CustomersView api={api} role={user.role} />}
-          {activeView === 'products' && <ProductsView api={api} role={user.role} />}
-          {activeView === 'orders' && <OrdersView api={api} role={user.role} />}
-          {activeView === 'profile' && <ProfileView user={user} api={api} />}
+          <Suspense fallback={<LoadingState />}>
+            {activeView === 'dashboard' && <DashboardView api={api} />}
+            {activeView === 'customers' && <CustomersView api={api} role={user.role} />}
+            {activeView === 'products' && <ProductsView api={api} role={user.role} />}
+            {activeView === 'orders' && <OrdersView api={api} role={user.role} />}
+            {activeView === 'profile' && <ProfileView user={user} api={api} />}
+          </Suspense>
         </main>
       </div>
     </div>

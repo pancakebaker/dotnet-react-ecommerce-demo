@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using EcommerceDemo.Api.Data;
 using EcommerceDemo.Api.Dtos;
 using EcommerceDemo.Api.Services;
@@ -29,11 +30,17 @@ public static class StorefrontEndpoints
     {
         var group = app.MapGroup("/api/storefront").WithTags("Storefront");
 
-        group.MapGet("/products", async (string? search, AppDbContext db) =>
+        group.MapGet("/products", async (string? search, AppDbContext db, IMemoryCache cache) =>
         {
             if (!InputValidation.TrySearch(search, out var searchInput, out var searchErrors))
             {
                 return Results.ValidationProblem(searchErrors);
+            }
+
+            if (string.IsNullOrWhiteSpace(searchInput.Term) &&
+                cache.TryGetValue(StorefrontCacheKeys.ActiveProducts, out IReadOnlyCollection<ProductResponse>? cachedProducts))
+            {
+                return Results.Ok(cachedProducts);
             }
 
             var query = db.Products.AsNoTracking().Where(product => product.IsActive);
@@ -46,7 +53,7 @@ public static class StorefrontEndpoints
                     (product.Description != null && product.Description.ToLower().Contains(term)));
             }
 
-            var products = await query
+            IReadOnlyCollection<ProductResponse> products = await query
                 .OrderBy(product => product.Name)
                 .Select(product => new ProductResponse(
                     product.Id,
@@ -57,6 +64,18 @@ public static class StorefrontEndpoints
                     product.StockQuantity,
                     product.IsActive))
                 .ToListAsync();
+
+            if (string.IsNullOrWhiteSpace(searchInput.Term))
+            {
+                cache.Set(
+                    StorefrontCacheKeys.ActiveProducts,
+                    products,
+                    new MemoryCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
+                        Size = products.Count
+                    });
+            }
 
             return Results.Ok(products);
         }).AllowAnonymous();

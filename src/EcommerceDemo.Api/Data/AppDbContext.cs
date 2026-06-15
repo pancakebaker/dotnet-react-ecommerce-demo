@@ -35,6 +35,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.Name).HasColumnName("name").HasMaxLength(150).IsRequired();
             entity.Property(x => x.CompanyName).HasColumnName("company_name").HasMaxLength(150);
             entity.Property(x => x.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
+            entity.HasIndex(x => x.Email);
+            entity.HasIndex(x => x.Name);
             entity.Property(x => x.Phone).HasColumnName("phone").HasMaxLength(50);
             entity.Property(x => x.Address).HasColumnName("address");
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
@@ -48,6 +50,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.Name).HasColumnName("name").HasMaxLength(150).IsRequired();
             entity.Property(x => x.Sku).HasColumnName("sku").HasMaxLength(80).IsRequired();
             entity.HasIndex(x => x.Sku).IsUnique();
+            entity.HasIndex(x => x.Name);
+            entity.HasIndex(x => x.IsActive);
             entity.Property(x => x.Description).HasColumnName("description");
             entity.Property(x => x.Price).HasColumnName("price").HasPrecision(12, 2);
             entity.Property(x => x.StockQuantity).HasColumnName("stock_quantity");
@@ -63,16 +67,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(x => x.OrderNumber).HasColumnName("order_number").HasMaxLength(50).IsRequired();
             entity.HasIndex(x => x.OrderNumber).IsUnique();
             entity.Property(x => x.CustomerId).HasColumnName("customer_id");
+            entity.HasIndex(x => x.CustomerId);
             entity.Property(x => x.Status).HasColumnName("status").HasMaxLength(50).IsRequired();
+            entity.HasIndex(x => x.Status);
             entity.Property(x => x.Subtotal).HasColumnName("subtotal").HasPrecision(12, 2);
             entity.Property(x => x.Tax).HasColumnName("tax").HasPrecision(12, 2);
             entity.Property(x => x.Discount).HasColumnName("discount").HasPrecision(12, 2);
             entity.Property(x => x.Total).HasColumnName("total").HasPrecision(12, 2);
             entity.Property(x => x.PaymentProvider).HasColumnName("payment_provider").HasMaxLength(50);
             entity.Property(x => x.PaymentReferenceId).HasColumnName("payment_reference_id").HasMaxLength(255);
+            entity.HasIndex(x => x.PaymentReferenceId);
             entity.Property(x => x.HubSpotObjectId).HasColumnName("hubspot_object_id").HasMaxLength(100);
             entity.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(x => x.CreatedAt);
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             entity.HasOne(x => x.Customer).WithMany(x => x.Orders).HasForeignKey(x => x.CustomerId);
             entity.HasOne(x => x.CreatedByUser).WithMany(x => x.OrdersCreated).HasForeignKey(x => x.CreatedByUserId);
@@ -83,7 +91,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.ToTable("order_items");
             entity.HasKey(x => x.Id);
             entity.Property(x => x.OrderId).HasColumnName("order_id");
+            entity.HasIndex(x => x.OrderId);
             entity.Property(x => x.ProductId).HasColumnName("product_id");
+            entity.HasIndex(x => x.ProductId);
             entity.Property(x => x.ProductName).HasColumnName("product_name").HasMaxLength(150).IsRequired();
             entity.Property(x => x.Quantity).HasColumnName("quantity");
             entity.Property(x => x.UnitPrice).HasColumnName("unit_price").HasPrecision(12, 2);
@@ -98,10 +108,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasKey(x => x.Id);
             entity.Property(x => x.EntityType).HasColumnName("entity_type").HasMaxLength(50).IsRequired();
             entity.Property(x => x.EntityId).HasColumnName("entity_id");
+            entity.HasIndex(x => new { x.EntityType, x.EntityId });
             entity.Property(x => x.Action).HasColumnName("action").HasMaxLength(100).IsRequired();
             entity.Property(x => x.Description).HasColumnName("description").IsRequired();
             entity.Property(x => x.UserId).HasColumnName("user_id");
+            entity.HasIndex(x => x.UserId);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at");
+            entity.HasIndex(x => x.CreatedAt);
             entity.HasOne(x => x.User).WithMany(x => x.ActivityLogs).HasForeignKey(x => x.UserId);
         });
     }

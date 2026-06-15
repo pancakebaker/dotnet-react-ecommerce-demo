@@ -21,7 +21,7 @@ type CheckoutPageProps = {
   changeQuantity: (productId: string, delta: number) => void;
   onBackToStore: () => void;
   onPreparePayment: (paymentMethod: PaymentMethodId, idempotencyKey: string) => Promise<StorefrontPaymentIntentResponse | null>;
-  onPlaceOrder: (paymentMethod: PaymentMethodId, paymentReferenceId?: string) => Promise<string | null>;
+  onPlaceOrder: (paymentMethod: PaymentMethodId, paymentIntentId?: string) => Promise<string | null>;
   onOrderConfirmed: () => void;
 };
 
@@ -75,8 +75,8 @@ export function CheckoutPage({
     }
   }
 
-  async function submitOrder(paymentMethod: PaymentMethodId, paymentReferenceId?: string) {
-    const orderNumber = await onPlaceOrder(paymentMethod, paymentReferenceId);
+  async function submitOrder(paymentMethod: PaymentMethodId, paymentIntentId?: string) {
+    const orderNumber = await onPlaceOrder(paymentMethod, paymentIntentId);
     if (orderNumber) {
       setConfirmation({
         orderNumber,

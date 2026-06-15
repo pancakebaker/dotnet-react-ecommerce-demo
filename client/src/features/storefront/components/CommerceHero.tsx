@@ -36,7 +36,7 @@ export function CommerceHero({ eyebrow, title, description, background, actions 
           width="1280"
           height="430"
           loading="eager"
-          fetchPriority="high"
+          {...{ fetchpriority: 'high' }}
         />
       </picture>
       <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-white/45" />

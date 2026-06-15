@@ -17,7 +17,7 @@ export type CheckoutStepContext = {
   changeQuantity: (productId: string, delta: number) => void;
   onBackToStore: () => void;
   onPreparePayment: (paymentMethod: PaymentMethodId, idempotencyKey: string) => Promise<StorefrontPaymentIntentResponse | null>;
-  onSubmitOrder: (paymentMethod: PaymentMethodId, paymentReferenceId?: string) => Promise<void>;
+  onSubmitOrder: (paymentMethod: PaymentMethodId, paymentIntentId?: string) => Promise<void>;
   goBack: () => void;
   goNext: () => void;
 };

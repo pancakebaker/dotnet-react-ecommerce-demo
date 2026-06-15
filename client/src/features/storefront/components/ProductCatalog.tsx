@@ -4,6 +4,8 @@ import { getProductImage } from '../../../helpers/productImages';
 import type { Product } from '../../../models';
 
 type ProductCatalogProps = {
+  error?: string;
+  loading?: boolean;
   products: Product[];
   search: string;
   onSearchChange: (search: string) => void;
@@ -11,7 +13,7 @@ type ProductCatalogProps = {
   onViewProduct: (product: Product) => void;
 };
 
-export function ProductCatalog({ products, search, onSearchChange, onAddToCart, onViewProduct }: ProductCatalogProps) {
+export function ProductCatalog({ error = '', loading = false, products, search, onSearchChange, onAddToCart, onViewProduct }: ProductCatalogProps) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       <section aria-labelledby="products-heading" className="space-y-4">
@@ -28,6 +30,14 @@ export function ProductCatalog({ products, search, onSearchChange, onAddToCart, 
             />
           </label>
         </div>
+
+        {error && <p className="rounded-md bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
+        {loading && <p className="text-sm text-slate-500" role="status">Loading products...</p>}
+        {!loading && !error && products.length === 0 && (
+          <p className="rounded-md border border-dashed border-line bg-white p-4 text-sm text-slate-500">
+            No products match your search.
+          </p>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {products.map((product, index) => (
@@ -75,7 +85,7 @@ function ProductCard({
           width="360"
           height="270"
           loading={imagePriority ? 'eager' : 'lazy'}
-          fetchPriority={imagePriority ? 'high' : 'auto'}
+          {...(imagePriority ? { fetchpriority: 'high' } : {})}
         />
       </picture>
       <div className="p-4">

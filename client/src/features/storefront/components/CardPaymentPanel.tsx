@@ -25,6 +25,7 @@ declare global {
 
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+const paymentIntentClientSecretPattern = /^pi_[^_]+_secret_/;
 
 export function CardPaymentPanel({
   amountLabel,
@@ -37,10 +38,11 @@ export function CardPaymentPanel({
   onPaymentError
 }: CardPaymentPanelProps) {
   const stripeOptions = useMemo(() => {
-    if (!paymentIntent?.clientSecret) return undefined;
+    const clientSecret = paymentIntent?.clientSecret ?? '';
+    if (!paymentIntentClientSecretPattern.test(clientSecret)) return undefined;
 
     return {
-      clientSecret: paymentIntent.clientSecret,
+      clientSecret,
       appearance: {
         theme: 'stripe' as const,
         variables: {
@@ -99,6 +101,11 @@ export function CardPaymentPanel({
     <div className="space-y-4">
       {paymentError && (
         <p className="rounded-md bg-rose-50 p-3 text-sm text-rose-700">{paymentError}</p>
+      )}
+      {paymentIntent && !stripeOptions && (
+        <p className="rounded-md bg-rose-50 p-3 text-sm text-rose-700">
+          Payment could not be initialized. Please refresh and try again.
+        </p>
       )}
 
       {stripePromise && stripeOptions && paymentIntent && (

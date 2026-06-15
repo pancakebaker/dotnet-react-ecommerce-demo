@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { PaymentMethodId, Product, StorefrontCustomer } from '../../models';
 import type { ApiClient } from '../../services/apiClient';
 import { CheckoutPage } from './CheckoutPage';
@@ -9,6 +9,7 @@ import { StorefrontHero } from './components/StorefrontHero';
 import { emptyStorefrontCustomer, hasValidStorefrontCustomer } from './helpers/storefrontCart';
 import { productSlug } from './helpers/productSlugs';
 import { useStorefrontCart } from './hooks/useStorefrontCart';
+import { useStorefrontProducts } from './hooks/useStorefrontProducts';
 import { useStorefrontRouting } from './hooks/useStorefrontRouting';
 
 type StorefrontPageProps = {
@@ -17,17 +18,13 @@ type StorefrontPageProps = {
 };
 
 export function StorefrontPage({ api, onSignIn }: StorefrontPageProps) {
-  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [customer, setCustomer] = useState<StorefrontCustomer>(emptyStorefrontCustomer);
   const [status, setStatus] = useState('');
   const [placing, setPlacing] = useState(false);
   const { cart, totals, orderItems, hasCartItems, addProduct, changeQuantity, clearCart } = useStorefrontCart();
+  const { products, loading: productsLoading, error: productsError } = useStorefrontProducts(api, search);
   const { route, viewProduct, backToProducts, openCheckout, closeCheckout, resetToHome } = useStorefrontRouting({ hasCartItems });
-
-  useEffect(() => {
-    api.storefrontProducts(search).then(setProducts).catch(() => setProducts([]));
-  }, [api, search]);
 
   const { subtotal, tax, total, itemCount } = totals;
 
@@ -132,7 +129,15 @@ export function StorefrontPage({ api, onSignIn }: StorefrontPageProps) {
 
       <main>
         <StorefrontHero productCount={products.length} cartCount={itemCount} total={total} canCheckout={hasCartItems} onCheckout={openCheckout} />
-        <ProductCatalog products={products} search={search} onSearchChange={setSearch} onAddToCart={addToCart} onViewProduct={viewProduct} />
+        <ProductCatalog
+          error={productsError}
+          loading={productsLoading}
+          products={products}
+          search={search}
+          onSearchChange={setSearch}
+          onAddToCart={addToCart}
+          onViewProduct={viewProduct}
+        />
       </main>
     </div>
   );

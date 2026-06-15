@@ -17,7 +17,6 @@ export interface StorefrontCheckoutRequest {
     quantity: number;
   }>;
   paymentMethod?: PaymentMethodId;
-  paymentReferenceId?: string;
   paymentIntentId?: string;
 }
 
@@ -34,7 +33,6 @@ export interface StorefrontPaymentIntentRequest {
 export interface StorefrontPaymentIntentResponse {
   clientSecret: string;
   paymentIntentId: string;
-  paymentReferenceId?: string;
   paymentMethod: PaymentMethodId;
   amount: number;
   currency: string;

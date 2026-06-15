@@ -38,19 +38,19 @@ export function StripePaymentForm({ amountLabel, placing, customerEmail, onPayme
       });
 
       if (result.error) {
-        setMessage(result.error.message ?? "Payment failed");
+        setMessage(result.error.message ?? 'Payment could not be confirmed. Please check your card details and try again.');
         onPaymentResult?.(null, "payment_failed");
       } else {
         const status = result.paymentIntent?.status ?? "processing";
         setMessage(
           status === "succeeded"
-            ? "Payment confirmed by Stripe. Waiting for the signed webhook..."
+            ? "Payment confirmed. Creating your order..."
             : `Payment status: ${status}`
         );
         onPaymentResult?.(result.paymentIntent?.id ?? null, status);
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Payment could not be completed.');
+      setMessage('Payment could not be completed. Please try again.');
       onPaymentResult?.(null, "payment_failed");
     } finally {
       setSubmitting(false);

@@ -11,7 +11,7 @@ export type PaymentMethodRenderProps = {
   paymentIntent: StorefrontPaymentIntentResponse | null;
   placing: boolean;
   onPaymentError: (message: string) => void;
-  onPlaceOrder: (paymentReferenceId?: string) => Promise<void>;
+  onPlaceOrder: (paymentIntentId?: string) => Promise<void>;
 };
 
 export type PaymentMethodDescriptor = {

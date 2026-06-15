@@ -37,36 +37,42 @@ describe('DeliveryMapPicker', () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
     vi.stubEnv('VITE_GOOGLE_MAPS_API_KEY', 'test-key');
+
+    class MockGeocoder {
+      geocode = vi.fn((request: { address?: string; location?: { lat: number; lng: number } }) => {
+        if (request.location) {
+          return Promise.resolve({
+            results: [{ formatted_address: `Pinned ${request.location.lat}, ${request.location.lng}` }]
+          });
+        }
+
+        return Promise.resolve({
+          results: [{
+            geometry: {
+              location: {
+                lat: () => 12.345678,
+                lng: () => 98.765432
+              }
+            }
+          }]
+        });
+      });
+    }
+
+    class MockAdvancedMarkerElement {
+      map = null;
+      position = null;
+
+      addListener = vi.fn(() => ({ remove: vi.fn() }));
+    }
+
     Object.defineProperty(window, 'google', {
       configurable: true,
       value: {
         maps: {
-          Geocoder: vi.fn(() => ({
-            geocode: vi.fn((request: { address?: string; location?: { lat: number; lng: number } }) => {
-              if (request.location) {
-                return Promise.resolve({
-                  results: [{ formatted_address: `Pinned ${request.location.lat}, ${request.location.lng}` }]
-                });
-              }
-
-              return Promise.resolve({
-                results: [{
-                  geometry: {
-                    location: {
-                      lat: () => 12.345678,
-                      lng: () => 98.765432
-                    }
-                  }
-                }]
-              });
-            })
-          })),
+          Geocoder: MockGeocoder,
           importLibrary: vi.fn(() => Promise.resolve({
-            AdvancedMarkerElement: vi.fn(() => ({
-              addListener: vi.fn(() => ({ remove: vi.fn() })),
-              map: null,
-              position: null
-            }))
+            AdvancedMarkerElement: MockAdvancedMarkerElement
           })),
           LatLng: vi.fn()
         }

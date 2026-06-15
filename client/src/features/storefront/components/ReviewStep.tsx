@@ -13,7 +13,7 @@ type ReviewStepProps = {
   total: number;
   onBack: () => void;
   onPreparePayment: (paymentMethod: PaymentMethodId, idempotencyKey: string) => Promise<StorefrontPaymentIntentResponse | null>;
-  onPlaceOrder: (paymentMethod: PaymentMethodId, paymentReferenceId?: string) => Promise<void>;
+  onPlaceOrder: (paymentMethod: PaymentMethodId, paymentIntentId?: string) => Promise<void>;
 };
 
 declare global {
@@ -117,7 +117,7 @@ export function ReviewStep({
               paymentIntent,
               placing,
               onPaymentError: setPaymentError,
-              onPlaceOrder: paymentReferenceId => onPlaceOrder(paymentMethod.id, paymentReferenceId)
+              onPlaceOrder: paymentIntentId => onPlaceOrder(paymentMethod.id, paymentIntentId)
             })}
           </div>
         </section>

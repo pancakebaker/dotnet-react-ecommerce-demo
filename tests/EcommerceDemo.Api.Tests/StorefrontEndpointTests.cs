@@ -140,4 +140,110 @@ public sealed class StorefrontEndpointTests(ApiTestFactory factory) : IClassFixt
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Storefront_Products_Endpoint_Returns_Active_Products_Only()
+    {
+        await _client.AuthenticateAsync();
+        var inactiveSku = $"INACTIVE-{Guid.NewGuid():N}"[..20];
+        var createResponse = await _client.PostAsJsonAsync("/api/products", new UpsertProductRequest(
+            "Inactive Storefront Item",
+            inactiveSku,
+            "Should not be visible to storefront shoppers",
+            25m,
+            10,
+            false));
+        createResponse.EnsureSuccessStatusCode();
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        var products = await _client.GetFromJsonAsync<List<ProductResponse>>($"/api/storefront/products?search={inactiveSku}");
+
+        Assert.NotNull(products);
+        Assert.Empty(products);
+    }
+
+    [Fact]
+    public async Task Storefront_Checkout_Rejects_Missing_Product()
+    {
+        var response = await _client.PostAsJsonAsync("/api/storefront/orders", new StorefrontCheckoutRequest(
+            ValidCustomer(),
+            [new StorefrontOrderItemRequest(Guid.NewGuid(), 1)],
+            PaymentMethod: PaymentMethodIds.CashOnDelivery));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Storefront_Checkout_Rejects_PaymentIntent_That_Is_Not_Succeeded()
+    {
+        var product = await FirstStorefrontProductAsync();
+        var paymentIntent = await PreparePaymentAsync(product, 1, "not-succeeded-payment");
+
+        var response = await _client.PostAsJsonAsync("/api/storefront/orders", new StorefrontCheckoutRequest(
+            ValidCustomer(),
+            [new StorefrontOrderItemRequest(product.Id, 1)],
+            paymentIntent.PaymentIntentId));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Storefront_Checkout_Rejects_PaymentIntent_Amount_Mismatch()
+    {
+        var product = await FirstStorefrontProductAsync();
+        var paymentIntent = await PreparePaymentAsync(product, 1, "amount-mismatch-payment");
+
+        var response = await _client.PostAsJsonAsync("/api/storefront/orders", new StorefrontCheckoutRequest(
+            ValidCustomer(),
+            [new StorefrontOrderItemRequest(product.Id, 2)],
+            paymentIntent.PaymentIntentId));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Storefront_Checkout_Rejects_PaymentIntent_Currency_Mismatch()
+    {
+        var product = await FirstStorefrontProductAsync();
+        var paymentIntent = await PreparePaymentAsync(product, 1, "currency-mismatch-payment");
+
+        var response = await _client.PostAsJsonAsync("/api/storefront/orders", new StorefrontCheckoutRequest(
+            ValidCustomer(),
+            [new StorefrontOrderItemRequest(product.Id, 1)],
+            paymentIntent.PaymentIntentId));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private async Task<ProductResponse> FirstStorefrontProductAsync()
+    {
+        var products = await _client.GetFromJsonAsync<List<ProductResponse>>("/api/storefront/products");
+        return Assert.Single(products!.Where(item => item.IsActive).Take(1));
+    }
+
+    private async Task<StorefrontPaymentIntentResponse> PreparePaymentAsync(ProductResponse product, int quantity, string idempotencyKey)
+    {
+        var response = await _client.PostAsJsonAsync("/api/storefront/payments/prepare", new StorefrontPaymentIntentRequest(
+            ValidCustomer(),
+            [new StorefrontOrderItemRequest(product.Id, quantity)],
+            idempotencyKey,
+            PaymentMethodIds.Card));
+        response.EnsureSuccessStatusCode();
+        var paymentIntent = await response.Content.ReadFromJsonAsync<StorefrontPaymentIntentResponse>();
+
+        Assert.NotNull(paymentIntent);
+        Assert.StartsWith("pi_", paymentIntent.PaymentIntentId);
+        Assert.StartsWith($"{paymentIntent.PaymentIntentId}_secret_", paymentIntent.ClientSecret);
+        return paymentIntent;
+    }
+
+    private static StorefrontCustomerRequest ValidCustomer()
+    {
+        return new StorefrontCustomerRequest(
+            "Front Door Buyer",
+            "Public Demo Co",
+            "buyer@public-demo.test",
+            "+1 555-0188",
+            "15 Checkout Lane");
+    }
 }

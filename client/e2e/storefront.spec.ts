@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const products = [
   {
@@ -21,10 +21,25 @@ const products = [
   }
 ];
 
+async function routePaymentPreparation(page: Page, paymentIntentId: string) {
+  await page.route('**/api/storefront/payments/prepare', async route => {
+    await route.fulfill({
+      json: {
+        paymentIntentId,
+        clientSecret: `${paymentIntentId}_secret_e2e`,
+        amount: 14559,
+        currency: 'usd'
+      }
+    });
+  });
+}
+
 test('visitor can add a product, enter customer details, and place an order', async ({ page }) => {
   await page.addInitScript(() => {
     window.__ECOMMERCE_DEMO_E2E_PAYMENT_INTENT_ID__ = 'pi_e2e_paid';
   });
+
+  await routePaymentPreparation(page, 'pi_e2e_paid');
 
   await page.route('**/api/storefront/products**', async route => {
     await route.fulfill({ json: products });
@@ -85,6 +100,41 @@ test('visitor can add a product, enter customer details, and place an order', as
   await expect(page.getByRole('dialog')).toContainText('Order OF-E2E-0001 has been placed successfully.');
   await page.getByRole('button', { name: 'OK' }).click();
   await expect(page.getByRole('heading', { name: /order products online/i })).toBeVisible();
+});
+
+test('checkout shows a friendly order error when order placement fails', async ({ page }) => {
+  await routePaymentPreparation(page, 'pi_e2e_pending');
+
+  await page.route('**/api/storefront/products**', async route => {
+    await route.fulfill({ json: products });
+  });
+
+  await page.route('**/api/storefront/orders', async route => {
+    const payload = route.request().postDataJSON();
+
+    expect(payload.paymentMethod).toBe('cash_on_delivery');
+    expect(payload.paymentIntentId).toBeUndefined();
+
+    await route.fulfill({
+      status: 400,
+      json: { message: 'Payment could not be verified.' }
+    });
+  });
+
+  await page.goto('/');
+
+  await page.getByRole('button', { name: 'Add to cart' }).first().click();
+  await page.getByRole('button', { name: 'Checkout' }).click();
+  await page.getByRole('button', { name: 'Continue to customer details' }).click();
+  await page.getByLabel('Name').fill('Front Door Buyer');
+  await page.getByLabel('Email').fill('buyer@example.test');
+  await page.getByLabel('Phone').fill('+1 555-0188');
+  await page.getByLabel('Address').fill('15 Checkout Lane');
+  await page.getByRole('button', { name: 'Review order' }).click();
+  await page.getByRole('radio', { name: /Cash on delivery/ }).check();
+  await page.getByRole('button', { name: /Place order for/ }).click();
+
+  await expect(page.getByRole('alert')).toContainText('Payment could not be verified.');
 });
 
 test('checkout shows mobile validation before submitting', async ({ page }) => {

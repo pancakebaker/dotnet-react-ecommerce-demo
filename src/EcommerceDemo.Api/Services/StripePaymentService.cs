@@ -124,7 +124,10 @@ public sealed class TestingPaymentProvider : IPaymentProvider
         var idempotencyKey = request.IdempotencyKey;
         var id = $"pi_test_{idempotencyKey[..Math.Min(idempotencyKey.Length, 16)]}";
         var amount = request.LineItems.Sum(item => item.UnitAmount * item.Quantity);
-        var paymentIntent = new PaymentIntentResult(id, $"{id}_secret_test", "requires_payment_method", amount, Currency);
+        var currency = idempotencyKey.Contains("currency-mismatch", StringComparison.OrdinalIgnoreCase)
+            ? "eur"
+            : Currency;
+        var paymentIntent = new PaymentIntentResult(id, $"{id}_secret_test", "requires_payment_method", amount, currency);
         _paymentIntents[id] = paymentIntent;
         return Task.FromResult(paymentIntent);
     }
@@ -133,7 +136,10 @@ public sealed class TestingPaymentProvider : IPaymentProvider
     {
         if (_paymentIntents.TryGetValue(providerPaymentId, out var paymentIntent))
         {
-            return Task.FromResult(paymentIntent with { Status = "succeeded" });
+            var status = providerPaymentId.Contains("not-succeeded", StringComparison.OrdinalIgnoreCase)
+                ? paymentIntent.Status
+                : "succeeded";
+            return Task.FromResult(paymentIntent with { Status = status });
         }
 
         return Task.FromResult(new PaymentIntentResult(providerPaymentId, $"{providerPaymentId}_secret_test", "succeeded", 0, Currency));

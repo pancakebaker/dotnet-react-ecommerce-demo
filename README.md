@@ -1,29 +1,47 @@
 # Ecommerce Demo
 
 [![CI](https://github.com/pancakebaker/dotnet-react-ecommerce-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/pancakebaker/dotnet-react-ecommerce-demo/actions/workflows/ci.yml)
+![.NET](https://img.shields.io/badge/.NET-8-512BD4)
+![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-Web%20API-512BD4)
+![React](https://img.shields.io/badge/React-18-61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF)
+![EF Core](https://img.shields.io/badge/EF%20Core-8-512BD4)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-supported-4169E1)
+![SQL Server](https://img.shields.io/badge/SQL%20Server-supported-CC2927)
+![Stripe](https://img.shields.io/badge/Payments-Stripe-635BFF)
+![JWT Auth](https://img.shields.io/badge/Auth-JWT-111827)
+![xUnit](https://img.shields.io/badge/Tests-xUnit-512BD4)
+![Vitest](https://img.shields.io/badge/Tests-Vitest-6E9F18)
+![Playwright](https://img.shields.io/badge/E2E-Playwright-45BA4B)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED)
 
-Ecommerce Demo is a full-stack ecommerce ordering demo. It combines a public storefront, cart checkout, customer capture, staff/admin operations, JWT authentication, role-based authorization, EF Core persistence, automated tests, Docker packaging, and GitHub Actions CI.
+## Project Overview
 
-This project is under ongoing development and is intended for demo and learning purposes. It is not a production ecommerce platform without additional hardening, operational review, and security work.
+Ecommerce Demo is a production-style full-stack ecommerce reference project built for demonstration and learning purposes. It combines a public storefront, responsive product catalog, cart checkout, Stripe PaymentIntent payment flow, staff/admin operations, JWT authentication, role-based authorization, EF Core persistence, automated tests, Docker packaging, and GitHub Actions CI.
 
-The project is intentionally compact while still showing the moving parts of a production-style ecommerce application: clear API boundaries, typed frontend development, role-aware workflows, test coverage, deployment configuration, and a user-facing flow that can be reviewed quickly.
+The project is intentionally compact, but it exercises practical end-to-end ecommerce concerns: clean API boundaries, typed frontend models, server-side validation, server-owned pricing, PaymentIntent verification before order creation, role-aware back-office workflows, deployment configuration, and a user-facing flow that can be reviewed quickly.
+
+This is not a production ecommerce platform without additional hardening, operational review, monitoring, secret management, payment review, and security work.
 
 ## Screenshots
 
-![Ecommerce Demo public storefront with full-width commerce banner, product catalog images, cart, and customer checkout form](docs/screenshots/storefront.jpg)
+![Public storefront showing the commerce hero, responsive product catalog, cart summary, and checkout entry points](docs/screenshots/storefront.jpg)
 
 | Checkout flow | Staff login | Staff dashboard | Order status workflow |
 | --- | --- | --- | --- |
-| ![Ecommerce Demo checkout page with clickable cart, customer details, and place order progress steps](docs/screenshots/checkout.jpg) | ![Ecommerce Demo two-column staff login page with ecommerce workspace image](docs/screenshots/login.jpg) | ![Ecommerce Demo staff dashboard with order metrics and recent activity](docs/screenshots/dashboard.jpg) | ![Ecommerce Demo order management screen with color-coded order status badges](docs/screenshots/orders.jpg) |
+| ![Checkout page with cart review, customer details, payment method selection, and place order progress steps](docs/screenshots/checkout.jpg) | ![Staff login screen with ecommerce workspace imagery and credential form](docs/screenshots/login.jpg) | ![Staff dashboard with order metrics, revenue summary, charts, and recent activity](docs/screenshots/dashboard.jpg) | ![Order management screen with status filters, color-coded status badges, and workflow actions](docs/screenshots/orders.jpg) |
 
 ## What You Can Try
 
-- Browse active products on an SEO-friendly public storefront.
-- Add products to a cart, move through checkout steps, enter validated customer details, choose Stripe card payment or cash on delivery, and place an order.
-- Sign in as staff/admin and review dashboard metrics, customers, products, orders, and profile details.
+- Browse active products on the anonymous storefront.
+- Search products, view product detail URLs, and add items to a cart.
+- Move through checkout with customer validation, delivery address support, card payment, or cash on delivery.
+- Create a Stripe PaymentIntent and submit an order with `paymentIntentId`.
+- Sign in as staff or admin to review dashboard metrics, customers, products, orders, and profile details.
 - Update order statuses and see activity reflected in dashboard data.
 - Export orders to CSV, products to a styled PDF catalog, and checkout invoices to PDF.
-- Run backend and frontend tests from a clean checkout.
+- Run backend, frontend, and browser tests from a clean checkout.
 
 ## Demo Accounts
 
@@ -32,17 +50,19 @@ The project is intentionally compact while still showing the moving parts of a p
 | Admin | `admin@ecommerce-demo.test` | `Password123!` |
 | Staff | `staff@ecommerce-demo.test` | `Password123!` |
 
-These accounts are seeded only for demonstration. Replace credentials and JWT secrets before adapting this project for non-demo use.
+These accounts are seeded only for local demonstration. Replace credentials and JWT secrets before adapting this project for any non-demo environment.
 
 ## Tech Stack
 
 | Area | Tools |
 | --- | --- |
-| Backend | ASP.NET Core Web API, EF Core, JWT bearer authentication |
-| Database | PostgreSQL or SQL Server by configuration, in-memory provider for quick demos |
-| Frontend | React, TypeScript, Vite, Tailwind CSS, D3.js |
-| Testing | xUnit API integration tests, Vitest component/unit tests, Playwright end-to-end tests |
+| Backend | .NET 8, ASP.NET Core minimal APIs, EF Core, JWT bearer authentication |
+| Database | PostgreSQL or SQL Server by configuration, EF Core in-memory provider for quick local demos |
+| Payments | Stripe PaymentIntents, Stripe Elements, PaymentElement |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, D3.js |
+| Testing | xUnit API integration tests, Vitest unit/component tests, Playwright end-to-end tests |
 | DevOps | GitHub Actions, Dockerfiles, Docker Compose |
+| Integrations | Optional HubSpot order sync |
 
 ## Architecture
 
@@ -53,32 +73,34 @@ flowchart LR
   Storefront --> Api["ASP.NET Core API"]
   BackOffice --> Api
   Api --> Auth["JWT auth + role policies"]
+  Api --> Pricing["Server-owned pricing + validation"]
+  Api --> Stripe["Stripe PaymentIntent verification"]
   Api --> Ef["EF Core"]
-  Ef --> Db["PostgreSQL / SQL Server"]
+  Ef --> Db["PostgreSQL / SQL Server / InMemory"]
+  Api --> HubSpot["Optional HubSpot sync"]
 ```
+
+The frontend uses typed models and a small API client. The backend owns order pricing, validates request payloads, verifies payment state, persists orders through EF Core, and exposes authorization-protected staff/admin endpoints.
 
 ## Feature Highlights
 
-- Public storefront with 10 seeded products and a focused cart, customer details, review, and order placement checkout flow.
-- Product catalog cards link to product detail URLs like `/products/countertop-scanner`, with product-specific hero imagery and detail copy.
-- The storefront hero is built from a reusable commerce hero shell so future product, campaign, or category pages can inject their own background, content, stats, and actions.
-- Checkout progress is registry-driven so steps can be added, reordered, or removed from one descriptor list.
-- Google Maps delivery pin in checkout that reverse-geocodes pin moves into the address field and geocodes address edits back onto the pin.
-- Stripe Payment Element checkout backed by server-created PaymentIntents, server-owned pricing, and PaymentIntent verification before order creation.
-- Payment provider boundary follows the Open/Closed Principle: checkout payment methods plug into shared backend/frontend extension points.
-- Checkout supports Visa/Mastercard card entry through Stripe and cash on delivery with an invoice PDF download after order placement.
-- Optional HubSpot order sync that creates/updates CRM deals from storefront and staff-created orders.
-- SEO metadata, Open Graph/Twitter tags, structured data, valid `robots.txt`, favicon, responsive WebP/JPEG images, and no-JavaScript fallback content.
-- JWT login with protected API routes, admin-gated staff registration, Admin/Staff authorization, and a staff login password visibility toggle.
-- Dashboard metrics and D3 visualizations for order momentum, product stock, revenue, and recent activity.
-- Customer CRUD with search, pagination, full contact fields, and client/server validation for email, phone, length limits, and unsafe input.
-- Product CRUD with SKU, price, stock quantity, and active/inactive status.
-- Order creation with line items, subtotal, tax, discount, total calculation, status workflow, and activity logs.
-- Staff-friendly exports for order CSV reporting and styled product PDF catalogs.
-- xUnit tests for authentication, authorization, customer, product, order, and anonymous storefront checkout paths.
-- Vitest coverage for frontend formatting, validation helpers, and component behavior.
-- Playwright e2e coverage for storefront checkout, customer validation, authenticated order status scanning, and exports.
-- Configurable database provider and CORS origins for local or hosted deployments.
+- Public storefront with seeded products, responsive catalog cards, product detail URLs, and SEO metadata.
+- Cart, customer details, review, and order placement checkout flow.
+- Stripe Elements and PaymentElement card flow backed by server-created PaymentIntents.
+- Backend verifies PaymentIntent `status == succeeded`, amount, and currency before creating a storefront order.
+- Card data is handled by Stripe Elements; the API never receives raw card details.
+- Cash on delivery option with invoice PDF download after order placement.
+- Server-owned subtotal, tax, discount, and total calculations.
+- Google Maps delivery pin that can reverse-geocode pin moves into the address field.
+- Staff/admin JWT login with role-based access control and field-level permission checks.
+- Dashboard metrics and D3 visualizations for orders, revenue, stock, and activity.
+- Customer CRUD with search, pagination, contact fields, and client/server validation.
+- Product CRUD with SKU, price, stock quantity, active/inactive state, and storefront cache invalidation.
+- Order creation, line items, status workflow, activity logs, and optional HubSpot deal sync.
+- Staff exports for order CSV reports and styled product PDF catalogs.
+- Security headers, CORS configuration, strong JWT secret checks, and safe config practices.
+- xUnit, Vitest, and Playwright coverage across API, frontend helpers/components, and browser journeys.
+- Dockerfiles, Docker Compose database services, and GitHub Actions CI.
 
 ## Run Locally
 
@@ -106,7 +128,7 @@ npm run dev
 
 Open the Vite URL printed in the terminal. By default it is `http://localhost:5173`, and the frontend proxies API calls to `http://127.0.0.1:5088`.
 
-For Lighthouse or mobile performance checks, use a production build instead of the Vite development server:
+For Lighthouse, production-like bundle checks, or mobile performance review, use a production build instead of the Vite development server:
 
 ```powershell
 cd path/to/dotnet-react-ecommerce-demo/client
@@ -116,27 +138,30 @@ npm run preview
 
 ## Configuration
 
-The API defaults to `InMemory` for fast local review. For a hosted demo, use PostgreSQL or SQL Server via environment variables or deployment-provider secrets.
+The API defaults to the EF Core in-memory provider for fast local review. Hosted demos should use PostgreSQL or SQL Server through environment variables or deployment-provider secrets.
 
-| Setting | Example |
-| --- | --- |
-| `Database__Provider` | `Postgres` or `SqlServer` |
-| `ConnectionStrings__Postgres` | `Host=...;Database=...;Username=...;Password=...` |
-| `ConnectionStrings__SqlServer` | `Server=...;Database=...;User Id=...;Password=...;TrustServerCertificate=True` |
-| `Jwt__Issuer` | `EcommerceDemo` |
-| `Jwt__Audience` | `EcommerceDemo.Client` |
-| `Jwt__Secret` | Strong secret stored outside source control |
-| `Cors__AllowedOrigins__0` | Hosted frontend URL, or local frontend origin such as `http://localhost:4173` |
-| `VITE_GOOGLE_MAPS_API_KEY` | Browser-restricted Google Maps JavaScript API key |
-| `Stripe__SecretKey` | Stripe secret key, such as `sk_test_...`, stored outside source control |
-| `Stripe__Currency` | `usd` |
-| `HubSpot__Enabled` | `true` to sync orders to HubSpot |
-| `HubSpot__AccessToken` | HubSpot private app access token, stored outside source control |
-| `HubSpot__ObjectType` | `deals` |
-| `HubSpot__Pipeline` | Optional HubSpot pipeline internal ID |
-| `HubSpot__DealStage` | Default HubSpot deal stage internal ID |
-| `HubSpot__StatusDealStages__Submitted` | Optional status-specific HubSpot deal stage internal ID |
-| `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key, such as `pk_test_...` |
+API-side settings belong in backend configuration or host secrets. Frontend `VITE_*` values are public browser build-time values and must not contain private API secrets.
+
+| Setting | Scope | Example |
+| --- | --- | --- |
+| `Database__Provider` | API secret/config | `Postgres` or `SqlServer` |
+| `ConnectionStrings__Postgres` | API secret/config | `Host=...;Database=...;Username=...;Password=...` |
+| `ConnectionStrings__SqlServer` | API secret/config | `Server=...;Database=...;User Id=...;Password=...;TrustServerCertificate=True` |
+| `Jwt__Issuer` | API config | `EcommerceDemo` |
+| `Jwt__Audience` | API config | `EcommerceDemo.Client` |
+| `Jwt__Secret` | API secret | Strong secret stored outside source control |
+| `Cors__AllowedOrigins__0` | API config | Hosted frontend URL, or local frontend origin such as `http://localhost:4173` |
+| `Stripe__SecretKey` | API secret | Stripe secret key such as `sk_test_...` |
+| `Stripe__Currency` | API config | `usd` |
+| `HubSpot__Enabled` | API config | `true` to sync orders to HubSpot |
+| `HubSpot__AccessToken` | API secret | HubSpot private app access token |
+| `HubSpot__ObjectType` | API config | `deals` |
+| `HubSpot__Pipeline` | API config | Optional HubSpot pipeline internal ID |
+| `HubSpot__DealStage` | API config | Default HubSpot deal stage internal ID |
+| `HubSpot__StatusDealStages__Submitted` | API config | Optional status-specific HubSpot deal stage internal ID |
+| `VITE_API_URL` | Frontend public value | Hosted API base URL |
+| `VITE_GOOGLE_MAPS_API_KEY` | Frontend public value | Browser-restricted Google Maps JavaScript API key |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | Frontend public value | Stripe publishable key such as `pk_test_...` |
 
 For local API secrets, copy the example development settings file and keep the real file uncommitted:
 
@@ -144,7 +169,7 @@ For local API secrets, copy the example development settings file and keep the r
 Copy-Item .\src\EcommerceDemo.Api\appsettings.Development.example.json .\src\EcommerceDemo.Api\appsettings.Development.json
 ```
 
-Then put your local API secrets in `src/EcommerceDemo.Api/appsettings.Development.json`:
+Then put local API secrets in `src/EcommerceDemo.Api/appsettings.Development.json`:
 
 ```json
 {
@@ -168,11 +193,11 @@ Then put your local API secrets in `src/EcommerceDemo.Api/appsettings.Developmen
 }
 ```
 
-HubSpot sync is disabled by default. When enabled, the API creates a CRM deal after staff or storefront order creation and updates the same deal when order status changes. HubSpot requires internal pipeline and deal stage IDs for deal stage changes; use the values from your HubSpot portal or leave the status mapping blank while testing basic order creation.
+HubSpot sync is disabled by default. When enabled, the API creates a CRM deal after staff or storefront order creation and updates the same deal when order status changes. HubSpot requires internal pipeline and deal stage IDs for deal stage changes; use values from your HubSpot portal or leave the status mapping blank while testing basic order creation.
 
 For local Vite development, a `.env` file is not required because `/api` calls are proxied to `http://127.0.0.1:5088` by `client/vite.config.ts`.
 
-Frontend production builds can set `VITE_API_URL` to point at a hosted API, `VITE_GOOGLE_MAPS_API_KEY` to enable the checkout delivery pin, and `VITE_STRIPE_PUBLISHABLE_KEY` to enable Stripe Elements. Copy `client/.env.example` to `client/.env` for local experiments that need custom frontend settings:
+Copy `client/.env.example` to `client/.env` only when local frontend experiments need custom public frontend settings:
 
 ```text
 VITE_API_URL=https://your-api.example.com
@@ -180,13 +205,15 @@ VITE_GOOGLE_MAPS_API_KEY=your-browser-key
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_key
 ```
 
+`Stripe__SecretKey` and `HubSpot__AccessToken` must never be exposed to the Vite client.
+
 When using Stripe test mode, Stripe's standard test card `4242 4242 4242 4242` works with any future expiration date, any CVC, and any postal code.
 
 ## Security Notes
 
 - API input validation normalizes text fields, rejects markup/script-like input, enforces length limits, and validates email domains, phone numbers, SKU, price, stock, password, and order quantity ranges.
-- Stripe card data is handled by Stripe Elements; the API creates PaymentIntents with server-calculated totals and verifies the PaymentIntent amount/status before creating storefront orders.
-- HubSpot private app tokens are used only by the API and should never be exposed to the Vite client.
+- Stripe card data is handled by Stripe Elements. The API creates PaymentIntents with server-calculated totals and verifies PaymentIntent status, amount, and currency before creating storefront orders.
+- HubSpot private app tokens and Stripe secret keys are used only by the API and should never be exposed to frontend code.
 - Frontend forms mirror key customer validation rules so incomplete emails, short phone numbers, and unsafe data are caught before submission.
 - React renders user-entered data as escaped text and avoids raw HTML rendering.
 - JWT secrets are rejected in production if they use weak demo values.
@@ -200,7 +227,7 @@ When using Stripe test mode, Stripe's standard test card `4242 4242 4242 4242` w
 - `POST /api/storefront/payments/prepare`
 - `POST /api/storefront/payments/create-intent`
 - `POST /api/storefront/orders`
-- `POST /api/auth/register` (Admin only)
+- `POST /api/auth/register` - Admin only
 - `POST /api/auth/login`
 - `GET /api/dashboard/summary`
 - `GET|POST|PUT|DELETE /api/customers`
@@ -213,16 +240,25 @@ Swagger is available at `/swagger` in development.
 
 ## Tests
 
-```powershell
-dotnet test --configuration Release
+Backend build and API/integration tests:
 
+```powershell
+dotnet build
+dotnet test
+```
+
+Frontend unit/component tests, browser tests, and production build:
+
+```powershell
 cd client
 npm test
 npm run test:e2e
 npm run build
 ```
 
-Refresh README screenshots when the frontend dev or preview server is running locally. The script mocks API responses for stable screenshots:
+The automated test environment uses test doubles for Stripe/HubSpot paths where applicable, so tests should not call real Stripe APIs or require real payment secrets.
+
+Refresh README screenshots when the frontend dev or preview server is running locally. The screenshot script mocks API responses for stable output:
 
 ```powershell
 cd path/to/dotnet-react-ecommerce-demo/client
@@ -263,30 +299,33 @@ Recommended hosted demo shape:
 - Deploy `src/EcommerceDemo.Api` to Azure App Service, Render, Railway, Fly.io, or any container host.
 - Deploy `client` to Netlify, Vercel, Azure Static Web Apps, Render static site, or nginx container hosting.
 - Use PostgreSQL or SQL Server for persistence.
-- Store JWT secrets and connection strings as environment variables.
+- Store JWT secrets, Stripe secret keys, HubSpot tokens, and database connection strings as backend environment variables or host secrets.
 - Set `Cors__AllowedOrigins__0` to the hosted frontend URL.
-- Set `VITE_API_URL` to the hosted API URL, `VITE_GOOGLE_MAPS_API_KEY` to a browser-restricted Google Maps key, and `VITE_STRIPE_PUBLISHABLE_KEY` to a Stripe publishable key before building the frontend.
-- Configure `Stripe__SecretKey` on the API host. Use Stripe test keys for this demo unless you have completed production payment review.
-- Configure `HubSpot__Enabled=true`, `HubSpot__AccessToken`, and HubSpot pipeline/stage IDs on the API host only when you want demo orders synced to HubSpot.
+- Set `VITE_API_URL` to the hosted API URL before building the frontend.
+- Set `VITE_GOOGLE_MAPS_API_KEY` to a browser-restricted Google Maps key if the checkout delivery pin should be enabled.
+- Set `VITE_STRIPE_PUBLISHABLE_KEY` to a Stripe publishable key if card payment should be enabled in the browser.
+- Configure `Stripe__SecretKey` only on the API host. Use Stripe test keys for this demo unless you have completed production payment review.
+- Configure `HubSpot__Enabled=true`, `HubSpot__AccessToken`, and HubSpot pipeline/stage IDs on the API host only when demo orders should sync to HubSpot.
 
 ## Project Layout
 
 ```text
 src/EcommerceDemo.Api             ASP.NET Core API
-tests/EcommerceDemo.Api.Tests     xUnit integration tests
+tests/EcommerceDemo.Api.Tests     xUnit API/integration tests
 client                            React TypeScript application
 client/src/app                    App shell and navigation configuration
 client/src/features               Screen-level React features by workflow
-client/src/components             Shared presentational components
+client/src/components             Shared presentational and form components
 client/src/services               API client and external service adapters
 client/src/models                 Shared TypeScript domain models
 client/src/helpers                Formatting and UI helper utilities
 client/e2e                        Playwright browser tests
 client/scripts                    Utility scripts for project assets
+docs                              Supporting docs and README screenshots
 .github/workflows                 CI pipeline
 docker-compose.yml                Local database services
 ```
 
-## Design Goals
+## Design Goals / Learning Goals
 
-Ecommerce Demo is intentionally scoped to show end-to-end product thinking without hiding behind boilerplate. It has public and authenticated user journeys, real order calculations, role-specific behavior, persistence concerns, API tests, frontend tests, CI, deployment configuration, and documentation that explains operational tradeoffs.
+Ecommerce Demo is scoped to make full-stack ecommerce tradeoffs visible without hiding the important pieces behind boilerplate. It demonstrates public and authenticated user journeys, typed frontend/backend contracts, server-owned order calculations, payment verification, role-specific authorization, persistence concerns, automated testing, CI, deployment configuration, and documentation that explains operational boundaries.

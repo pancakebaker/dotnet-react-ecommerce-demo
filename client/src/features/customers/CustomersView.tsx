@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { PackagePlus } from 'lucide-react';
-import { CustomerInput } from '../../components/CustomerInput';
+import { CustomerInput } from '../../components/forms/CustomerInput';
 import { DataTable } from '../../components/DataTable';
 import { Toolbar } from '../../components/Toolbar';
 import { emailPlaceholder, emailValidationMessage, isValidEmail, isValidPhone, phonePattern, phonePatternTitle, phonePlaceholder, phoneValidationMessage } from '../../helpers/validation';

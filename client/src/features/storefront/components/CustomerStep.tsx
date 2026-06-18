@@ -1,4 +1,4 @@
-import { CustomerInput } from '../../../components/CustomerInput';
+import { CustomerInput } from '../../../components/forms/CustomerInput';
 import { emailPlaceholder, emailValidationMessage, isValidEmail, isValidPhone, phonePattern, phonePatternTitle, phonePlaceholder, phoneValidationMessage } from '../../../helpers/validation';
 import type { StorefrontCustomer } from '../../../models';
 import { DeliveryMapPicker } from '../DeliveryMapPicker';

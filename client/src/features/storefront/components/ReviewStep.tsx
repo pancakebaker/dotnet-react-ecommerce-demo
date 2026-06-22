@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import clsx from 'clsx';
 import { formatMoney } from '../../../helpers/format';
 import type { CartItem, PaymentMethodId, StorefrontCustomer, StorefrontPaymentIntentResponse } from '../../../models';
 import { getPaymentFingerprint } from '../helpers/storefrontCart';
@@ -88,9 +89,10 @@ export function ReviewStep({
               const isSelected = method.id === selectedPaymentMethod;
               return (
                 <label
-                  className={`flex min-h-28 cursor-pointer gap-3 rounded-md border p-4 transition ${
+                  className={clsx(
+                    'flex min-h-28 cursor-pointer gap-3 rounded-md border p-4 transition',
                     isSelected ? 'border-brand bg-teal-50 ring-2 ring-brand/20' : 'border-line bg-white hover:bg-field'
-                  }`}
+                  )}
                   key={method.id}
                 >
                   <input

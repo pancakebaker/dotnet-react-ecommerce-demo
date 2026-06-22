@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import clsx from 'clsx';
 import { CheckCircle2, Download } from 'lucide-react';
 import { downloadOrdersCsv } from '../../helpers/exports';
 import { formatMoney } from '../../helpers/format';
@@ -91,15 +92,15 @@ export function OrdersView({ api, role }: OrdersViewProps) {
           const style = statusStyles[order.status];
 
           return (
-            <article key={order.id} className={`rounded-lg border border-l-4 border-line bg-white p-4 shadow-sm ${style.card}`}>
+            <article key={order.id} className={clsx('rounded-lg border border-l-4 border-line bg-white p-4 shadow-sm', style.card)}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="font-semibold">{order.orderNumber}</h2>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
                     <span>{order.customerName}</span>
                     <span aria-hidden="true">-</span>
-                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${style.badge}`}>
-                      <span className={`h-2 w-2 rounded-full ${style.dot}`} aria-hidden="true" />
+                    <span className={clsx('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold', style.badge)}>
+                      <span className={clsx('h-2 w-2 rounded-full', style.dot)} aria-hidden="true" />
                       {order.status}
                     </span>
                   </div>

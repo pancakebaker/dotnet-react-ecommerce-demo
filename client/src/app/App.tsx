@@ -6,6 +6,7 @@ import type { BackOfficeView, User } from '../models';
 import { canAccess } from '../permissions/permissions';
 import { ApiClient } from '../services/apiClient';
 import { navItems } from './navigation';
+import { mobileNavButtonClass, sidebarNavButtonClass } from './styles/navigationStyles';
 
 const tokenStorageKey = 'ecommerce-demo.token';
 const userStorageKey = 'ecommerce-demo.user';
@@ -76,7 +77,7 @@ function App() {
           {visibleNavItems.map(item => (
             <button
               key={item.id}
-              className={`focus-ring flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm ${activeView === item.id ? 'bg-teal-50 text-brand' : 'hover:bg-field'}`}
+              className={sidebarNavButtonClass(activeView === item.id)}
               onClick={() => setView(item.id)}
             >
               <item.icon className="h-4 w-4" />
@@ -104,7 +105,7 @@ function App() {
             {visibleNavItems.map(item => (
               <button
                 key={item.id}
-                className={`focus-ring min-h-10 flex-none rounded-md px-3 py-2 text-sm ${activeView === item.id ? 'bg-teal-50 text-brand' : 'bg-white'}`}
+                className={mobileNavButtonClass(activeView === item.id)}
                 onClick={() => setView(item.id)}
                 aria-current={activeView === item.id ? 'page' : undefined}
               >

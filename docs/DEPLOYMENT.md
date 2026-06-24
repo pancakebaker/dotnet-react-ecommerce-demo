@@ -1,6 +1,6 @@
 # Deployment Notes
 
-This project can be hosted as a split full-stack demo: an ASP.NET Core API plus a React/Vite static frontend.
+This project can be hosted as a split full-stack application: an ASP.NET Core API plus a React/Vite static frontend.
 
 ## Suggested Repository
 

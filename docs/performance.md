@@ -6,7 +6,7 @@ The anonymous storefront product catalog caches the default active product list 
 
 - Search requests are not cached, so shoppers always query the latest filtered data.
 - Product create, update, and delete endpoints remove the active catalog cache key after successful writes.
-- The cache is process-local and intentionally lightweight for the demo. Multi-instance deployments would need a shared cache or cache-busting strategy.
+- The cache is process-local and intentionally lightweight for the current single-instance configuration. Multi-instance deployments would need a shared cache or cache-busting strategy.
 
 ## Query Shape
 

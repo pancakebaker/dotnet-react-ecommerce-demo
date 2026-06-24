@@ -1,13 +1,6 @@
-# Deployment Notes
+# Deployment
 
 This project can be hosted as a split full-stack application: an ASP.NET Core API plus a React/Vite static frontend.
-
-## Suggested Repository
-
-```powershell
-git remote add origin https://github.com/pancakebaker/dotnet-react-ecommerce-demo.git
-git push -u origin main
-```
 
 ## API
 
@@ -45,10 +38,12 @@ npm run build
 ## Docker
 
 ```powershell
-docker build -f src/EcommerceDemo.Api/Dockerfile -t ecommerce-demo-api .
+docker build -f src/EcommerceDemo.Api/Dockerfile -t commerce-platform-api .
 docker build -f client/Dockerfile `
   --build-arg VITE_API_URL=https://your-api.example.com `
   --build-arg VITE_GOOGLE_MAPS_API_KEY=your-browser-key `
   --build-arg VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_key `
-  -t ecommerce-demo-client .
+  -t commerce-platform-client .
 ```
+
+See [Operational Considerations](operations.md) for health checks, logging, monitoring, backups, secrets, scaling, and recovery requirements.

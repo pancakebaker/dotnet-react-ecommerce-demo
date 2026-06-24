@@ -16,7 +16,7 @@ These notes capture current implementation decisions and the work still required
 - **Browser/API controls:** Configured CORS origins, HTTPS/HSTS outside development/testing, and baseline security headers reduce common exposure.
 - **Data minimization:** Payment and HubSpot reference fields are excluded from general permission-based response visibility.
 
-These controls are OWASP-aware, especially around authentication, authorization, validation, secret separation, output safety, and secure configuration. They are not a substitute for a production threat model or security assessment.
+These controls are OWASP-aware, especially around authentication, authorization, validation, secret separation, output safety, and secure configuration. They are not a substitute for a production threat model or independent security review.
 
 ### Recommended Future Security Improvements
 
@@ -74,7 +74,7 @@ AI tools can support this project professionally by:
 
 AI output is treated as a proposal, not authority. A developer should inspect every change, verify claims against the code, run the relevant automated checks, review security and data-handling implications, and remain accountable for the final result.
 
-## Challenges and Solutions
+## Engineering Decisions
 
 | Challenge | Problem | Approach | Result |
 | --- | --- | --- | --- |
@@ -87,7 +87,7 @@ AI output is treated as a proposal, not authority. A developer should inspect ev
 | Environment configuration | Local convenience settings can become unsafe production defaults. | Support environment-based database, JWT, CORS, Stripe, and HubSpot configuration and fail fast on weak production JWT/in-memory database settings. | Fast local setup with explicit production guardrails. |
 | External integrations in tests | Real Stripe or HubSpot calls would make tests slow, costly, and nondeterministic. | Register testing providers in the `Testing` environment. | Integration paths can be exercised without real credentials or network calls. |
 
-## Future Improvements
+## Roadmap
 
 - Expand automated coverage around permission matrices, failure paths, and accessibility.
 - Add structured logging, tracing, metrics, dashboards, and alerting.

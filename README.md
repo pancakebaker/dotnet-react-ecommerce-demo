@@ -24,6 +24,24 @@ The project is intentionally compact, but it exercises practical end-to-end ecom
 
 This is not a production ecommerce platform without additional hardening, operational review, monitoring, secret management, payment review, and security work.
 
+## Interview Walkthrough
+
+For a short screen-share, this sequence shows the project clearly:
+
+1. Open the public storefront, add a product, and step through checkout.
+2. Explain that the API reloads products and recalculates totals instead of trusting browser prices.
+3. Sign in as staff or admin and show the dashboard, permissions, and order workflow.
+4. Use the diagrams and engineering notes to discuss boundaries, security decisions, testing, and next steps.
+
+Supporting documentation:
+
+- [Architecture and request flows](docs/architecture.md)
+- [API reference](docs/api.md)
+- [Security, CI/CD, challenges, and roadmap](docs/engineering-notes.md)
+- [Testing checklist](docs/testing.md)
+- [Deployment notes](docs/DEPLOYMENT.md)
+- [Performance notes](docs/performance.md)
+
 ## Screenshots
 
 ![Public storefront showing the commerce hero, responsive product catalog, cart summary, and checkout entry points](docs/screenshots/storefront.jpg)
@@ -68,19 +86,23 @@ These accounts are seeded only for local demonstration. Replace credentials and 
 
 ```mermaid
 flowchart LR
-  Visitor["Public visitor"] --> Storefront["React storefront"]
-  Staff["Staff/Admin"] --> BackOffice["React management app"]
-  Storefront --> Api["ASP.NET Core API"]
-  BackOffice --> Api
-  Api --> Auth["JWT auth + role policies"]
-  Api --> Pricing["Server-owned pricing + validation"]
-  Api --> Stripe["Stripe PaymentIntent verification"]
-  Api --> Ef["EF Core"]
+  Visitor["Public customer"] --> React["React + TypeScript"]
+  Staff["Staff / Admin"] --> React
+  React --> Client["Typed API client"]
+  Client --> Api["ASP.NET Core minimal API"]
+  Api --> Auth["JWT policies + permission checks"]
+  Api --> Services["Checkout, pricing, mapping, integrations"]
+  Api --> Validation["DTO and payload validation"]
+  Services --> Ef["EF Core AppDbContext"]
+  Api --> Ef
   Ef --> Db["PostgreSQL / SQL Server / InMemory"]
-  Api --> HubSpot["Optional HubSpot sync"]
+  Services --> Stripe["Stripe PaymentIntents"]
+  Services --> HubSpot["Optional HubSpot sync"]
 ```
 
-The frontend uses typed models and a small API client. The backend owns order pricing, validates request payloads, verifies payment state, persists orders through EF Core, and exposes authorization-protected staff/admin endpoints.
+The frontend uses feature folders, typed models, focused hooks, and a small API client. Endpoint modules handle HTTP concerns, focused services own checkout and integration logic, and EF Core provides the data-access boundary. The project intentionally does not add a repository abstraction because `AppDbContext` already provides the query and unit-of-work capabilities needed at its current size.
+
+See [Architecture and request flows](docs/architecture.md) for login, browsing/cart, payment, and order-creation sequence diagrams.
 
 ## Feature Highlights
 
@@ -211,7 +233,9 @@ When using Stripe test mode, Stripe's standard test card `4242 4242 4242 4242` w
 
 ## Security Notes
 
-- API input validation normalizes text fields, rejects markup/script-like input, enforces length limits, and validates email domains, phone numbers, SKU, price, stock, password, and order quantity ranges.
+- Staff/admin authentication uses signed JWT bearer tokens. Authorization combines role policies with resource/action and editable-field permissions from `shared/permissions.config.json`.
+- Passwords are salted and hashed with PBKDF2-SHA256; plaintext passwords are not stored.
+- API input validation normalizes text fields, rejects markup/script-like input, enforces length limits, and validates email, phone, SKU, price, stock, password, and order quantity ranges.
 - Stripe card data is handled by Stripe Elements. The API creates PaymentIntents with server-calculated totals and verifies PaymentIntent status, amount, and currency before creating storefront orders.
 - HubSpot private app tokens and Stripe secret keys are used only by the API and should never be exposed to frontend code.
 - Frontend forms mirror key customer validation rules so incomplete emails, short phone numbers, and unsafe data are caught before submission.
@@ -220,23 +244,24 @@ When using Stripe test mode, Stripe's standard test card `4242 4242 4242 4242` w
 - CORS is restricted to configured frontend origins.
 - API responses include security headers such as `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy`.
 
+The project still needs production controls such as managed secret storage, rate limiting, centralized exception handling, audit retention, automated security scanning, and operational monitoring. These are tracked under [recommended future security improvements](docs/engineering-notes.md#recommended-future-security-improvements).
+
 ## API Highlights
 
-- `GET /health`
-- `GET /api/storefront/products`
-- `POST /api/storefront/payments/prepare`
-- `POST /api/storefront/payments/create-intent`
-- `POST /api/storefront/orders`
-- `POST /api/auth/register` - Admin only
-- `POST /api/auth/login`
-- `GET /api/dashboard/summary`
-- `GET|POST|PUT|DELETE /api/customers`
-- `GET|POST|PUT|DELETE /api/products`
-- `GET|POST /api/orders`
-- `PATCH /api/orders/{id}/status`
-- `GET|PUT /api/profile`
+| Area | Main routes | Access |
+| --- | --- | --- |
+| Health | `GET /health` | Public |
+| Storefront | `GET /api/storefront/products`, payment preparation, order submission | Public |
+| Authentication | `POST /api/auth/login`, `POST /api/auth/register` | Public login; admin registration |
+| Back office | Dashboard, customers, products, orders, profile | Staff/admin plus configured permissions |
 
-Swagger is available at `/swagger` in development.
+Swagger/OpenAPI is available at `/swagger` in development. See the [API reference](docs/api.md) for endpoint-level authentication and payload summaries.
+
+## CI/CD
+
+GitHub Actions runs on pull requests and pushes to `main`. The current pipeline restores and builds the .NET API, runs xUnit tests with coverage collection, installs frontend dependencies, runs Vitest and Playwright, and creates the production Vite build.
+
+Deployment remains environment-specific. The Dockerfiles package the API and static frontend, while [deployment notes](docs/DEPLOYMENT.md) describe the required runtime configuration. Dependency review, secret scanning, container scanning, artifact publishing, and deployment approval gates are recommended pipeline extensions rather than claimed current features.
 
 ## Tests
 

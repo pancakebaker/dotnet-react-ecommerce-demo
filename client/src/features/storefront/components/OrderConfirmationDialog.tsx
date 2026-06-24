@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { CheckCircle2, Download } from 'lucide-react';
 import { useState } from 'react';
 import { downloadStorefrontInvoice, type StorefrontInvoice } from '../helpers/storefrontInvoice';
@@ -45,7 +46,14 @@ export function OrderConfirmationDialog({ orderNumber, invoice, onConfirm }: Ord
             {downloading ? 'Preparing invoice' : 'Download invoice'}
           </button>
         )}
-        <button className={`${invoice ? 'mt-3' : 'mt-5'} focus-ring min-h-11 w-full rounded-md border border-line px-4 py-2 font-semibold hover:bg-field`} onClick={onConfirm} type="button">
+        <button
+          className={clsx(
+            'focus-ring min-h-11 w-full rounded-md border border-line px-4 py-2 font-semibold hover:bg-field',
+            invoice ? 'mt-3' : 'mt-5'
+          )}
+          onClick={onConfirm}
+          type="button"
+        >
           OK
         </button>
       </section>

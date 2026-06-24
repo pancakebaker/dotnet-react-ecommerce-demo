@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import clsx from 'clsx';
 import { Download } from 'lucide-react';
 import { Toolbar } from '../../components/Toolbar';
 import { downloadProductsPdf } from '../../helpers/exports';
@@ -29,7 +30,10 @@ const productColumns: ProductColumn[] = [
     field: 'isActive',
     label: 'Status',
     render: product => (
-      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${product.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+      <span className={clsx(
+        'inline-flex rounded-full px-2.5 py-1 text-xs font-semibold',
+        product.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+      )}>
         {product.isActive ? 'Active' : 'Inactive'}
       </span>
     )
@@ -77,7 +81,7 @@ export function ProductsView({ api, role }: ProductsViewProps) {
             <thead className="bg-slate-100 text-left text-xs uppercase text-slate-600">
               <tr>
                 {visibleColumns.map(column => (
-                  <th key={column.field} className={`px-4 py-3 font-semibold ${column.align === 'right' ? 'text-right' : ''}`}>{column.label}</th>
+                  <th key={column.field} className={clsx('px-4 py-3 font-semibold', column.align === 'right' && 'text-right')}>{column.label}</th>
                 ))}
               </tr>
             </thead>
@@ -85,7 +89,12 @@ export function ProductsView({ api, role }: ProductsViewProps) {
               {(products?.items ?? []).map((product, index) => (
                 <tr key={product.id} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                   {visibleColumns.map(column => (
-                    <td key={column.field} className={`px-4 py-3 ${column.field === 'description' ? 'min-w-64 text-slate-600' : 'whitespace-nowrap'} ${column.field === 'name' ? 'font-medium' : ''} ${column.align === 'right' ? 'text-right' : ''}`}>
+                    <td key={column.field} className={clsx(
+                      'px-4 py-3',
+                      column.field === 'description' ? 'min-w-64 text-slate-600' : 'whitespace-nowrap',
+                      column.field === 'name' && 'font-medium',
+                      column.align === 'right' && 'text-right'
+                    )}>
                       {column.render(product)}
                     </td>
                   ))}

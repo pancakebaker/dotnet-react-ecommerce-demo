@@ -59,7 +59,7 @@ These accounts are seeded only for local demonstration. Replace credentials and 
 | Backend | .NET 8, ASP.NET Core minimal APIs, EF Core, JWT bearer authentication |
 | Database | PostgreSQL or SQL Server by configuration, EF Core in-memory provider for quick local demos |
 | Payments | Stripe PaymentIntents, Stripe Elements, PaymentElement |
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, D3.js |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, clsx, D3.js |
 | Testing | xUnit API integration tests, Vitest unit/component tests, Playwright end-to-end tests |
 | DevOps | GitHub Actions, Dockerfiles, Docker Compose |
 | Integrations | Optional HubSpot order sync |
@@ -96,7 +96,7 @@ The frontend uses typed models and a small API client. The backend owns order pr
 - Dashboard metrics and D3 visualizations for orders, revenue, stock, and activity.
 - Customer CRUD with search, pagination, contact fields, and client/server validation.
 - Product CRUD with SKU, price, stock quantity, active/inactive state, and storefront cache invalidation.
-- Order creation, line items, status workflow, activity logs, and optional HubSpot deal sync.
+- Order creation, line items, accessible status workflow actions, activity logs, and optional HubSpot deal sync.
 - Staff exports for order CSV reports and styled product PDF catalogs.
 - Security headers, CORS configuration, strong JWT secret checks, and safe config practices.
 - xUnit, Vitest, and Playwright coverage across API, frontend helpers/components, and browser journeys.

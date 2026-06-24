@@ -1,6 +1,6 @@
 # Architecture and Request Flows
 
-This document is designed for a short technical walkthrough. It describes the code that exists today and calls out deliberate simplifications.
+This document describes the current system boundaries, request flows, and deliberate architectural trade-offs.
 
 ## System Architecture
 
@@ -152,7 +152,7 @@ Storefront card orders add payment verification before persistence. Staff-create
 
 ```text
 src/EcommerceDemo.Api/
-|-- Data/          EF Core context and demo seeding
+|-- Data/          EF Core context and development seed data
 |-- Domain/        Entities, order statuses, and domain state
 |-- Dtos/          Explicit API request and response contracts
 |-- Endpoints/     Route groups, HTTP orchestration, authorization

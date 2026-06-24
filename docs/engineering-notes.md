@@ -1,6 +1,6 @@
 # Engineering Notes
 
-These notes capture the implementation decisions that are useful in a technical interview, along with the work still required before treating the demo as a production commerce platform.
+These notes capture current implementation decisions and the work still required before operating the application as a production commerce platform.
 
 ## Security
 

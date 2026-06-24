@@ -11,3 +11,4 @@
 - **External synchronization:** HubSpot calls occur from the request path and do not use a durable retry queue.
 - **Localization:** UI copy, currency presentation, and catalog content are not localized.
 - **Commerce scope:** Multi-vendor settlement, warehouse management, returns, tax-provider integration, promotions, subscriptions, and multi-currency catalogs are outside the current scope.
+- **Invoice rendering:** Server invoice generation requires a compatible Chrome/Chromium runtime and does not currently persist generated documents or template versions.

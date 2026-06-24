@@ -24,12 +24,16 @@ flowchart TB
     Permissions["Role, action, and field permissions"]
     Validation["DTO and payload validation"]
     Services["Checkout, pricing, mapping, numbering"]
+    InvoiceRenderer["Razor invoice template renderer"]
+    PdfGenerator["Chromium PDF generator"]
     Data["EF Core AppDbContext"]
     ApiClient --> Endpoints
     Endpoints --> Auth
     Endpoints --> Permissions
     Endpoints --> Validation
     Endpoints --> Services
+    Services --> InvoiceRenderer
+    InvoiceRenderer --> PdfGenerator
     Endpoints --> Data
     Services --> Data
   end
@@ -148,6 +152,33 @@ sequenceDiagram
 
 Storefront card orders add payment verification before persistence. Staff-created orders require JWT authentication and configured resource permissions.
 
+## Invoice Generation Flow
+
+```mermaid
+sequenceDiagram
+  actor Operator as Staff / Admin
+  participant API as GET /api/orders/{id}/invoice
+  participant DB as AppDbContext
+  participant Service as Invoice document service
+  participant Razor as Razor template renderer
+  participant Chromium as Chromium PDF generator
+
+  Operator->>API: Request invoice with bearer token
+  API->>API: Enforce orders:view permission
+  API->>DB: Load order, customer, and line items
+  DB-->>API: Persisted order aggregate
+  API->>Service: Generate invoice
+  Service->>Service: Map InvoiceViewModel
+  Service->>Razor: Render Invoice.cshtml
+  Razor-->>Service: Encoded print HTML
+  Service->>Chromium: Convert HTML to A4 PDF
+  Chromium-->>Service: PDF bytes
+  Service-->>API: PDF bytes
+  API-->>Operator: application/pdf download
+```
+
+The template receives only invoice-safe values. Payment provider references are not part of the view model. The existing React/jsPDF storefront invoice remains separate and continues to work without introducing Razor into the client application.
+
 ## Backend Structure
 
 ```text
@@ -157,6 +188,9 @@ src/EcommerceDemo.Api/
 |-- Dtos/          Explicit API request and response contracts
 |-- Endpoints/     Route groups, HTTP orchestration, authorization
 |-- Services/      Checkout, pricing, auth, mapping, and integrations
+|   `-- Invoices/  Invoice view model, Razor rendering, and PDF conversion
+|-- Templates/
+|   `-- Invoices/  Server-side Razor invoice templates
 |-- Validation/    Input normalization and allowed-field enforcement
 |-- Program.cs     Dependency injection, middleware, auth, and startup
 ```

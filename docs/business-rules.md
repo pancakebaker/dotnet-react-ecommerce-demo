@@ -43,6 +43,7 @@ This document records server-enforced commerce invariants and identifies workflo
 - Completing, cancelling, or otherwise updating an order requires the corresponding permission.
 - Order creation and status changes add activity-log records.
 - HubSpot synchronization is optional and does not determine whether the local order is valid.
+- Server invoice PDFs are generated from persisted order/customer/item data and exclude provider payment reference IDs.
 
 > [!NOTE]
 > The current API validates the target status and caller permission, but it does not enforce a state-transition matrix. For example, it does not prevent every logically invalid transition based on the current status. A transition policy is listed in [Known Limitations](known-limitations.md).

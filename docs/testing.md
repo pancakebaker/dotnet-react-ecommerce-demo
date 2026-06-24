@@ -26,6 +26,8 @@ Use this checklist before release and after checkout, payment, permission, or va
 - Backend rejects PaymentIntent status values other than `succeeded`.
 - Backend rejects PaymentIntent amount or currency mismatches.
 - Backend creates an order after valid payment verification.
+- Razor invoice rendering includes order, customer, and line-item values and tolerates missing optional contact fields.
+- Authenticated order invoice endpoint returns an `application/pdf` attachment.
 - Admin/staff protected API flows still require authentication and role permissions.
 - No Checkout Session flow is reintroduced.
 
@@ -33,4 +35,5 @@ Use this checklist before release and after checkout, payment, permission, or va
 
 - API tests run in the `Testing` environment with an EF Core in-memory database.
 - Automated tests use `TestingPaymentProvider` instead of Stripe, so no real Stripe API calls or secrets are required.
+- API tests use `TestingInvoicePdfGenerator` so CI does not launch or download Chromium; Razor HTML rendering still uses the real template.
 - Frontend tests mock API client methods and use the existing e2e payment bypass for PaymentIntent order submission.

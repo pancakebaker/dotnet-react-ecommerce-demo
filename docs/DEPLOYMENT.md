@@ -16,6 +16,9 @@ Set production secrets in the hosting provider:
 - `Cors__AllowedOrigins__0`
 - `Stripe__SecretKey`
 - `Stripe__Currency=usd`
+- `InvoicePdf__BrowserExecutablePath`
+- `InvoicePdf__AllowBrowserDownload=false`
+- `InvoicePdf__DisableSandbox`
 - `HubSpot__Enabled=true`
 - `HubSpot__AccessToken`
 - `HubSpot__ObjectType=deals`
@@ -24,6 +27,8 @@ Set production secrets in the hosting provider:
 - `HubSpot__StatusDealStages__Submitted`
 
 HubSpot integration is optional. Keep the private app token on the API host only, and use HubSpot internal pipeline/stage IDs when mapping order statuses to deal stages.
+
+The API container installs Chromium and configures `/usr/bin/chromium` for server-generated invoice PDFs. Non-container deployments should install Chrome/Chromium and set `InvoicePdf__BrowserExecutablePath`. Managed browser download is intended for local development, not immutable production hosts.
 
 ## Frontend
 

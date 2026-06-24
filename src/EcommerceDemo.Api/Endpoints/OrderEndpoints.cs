@@ -3,6 +3,7 @@ using EcommerceDemo.Api.Data;
 using EcommerceDemo.Api.Domain;
 using EcommerceDemo.Api.Dtos;
 using EcommerceDemo.Api.Services;
+using EcommerceDemo.Api.Services.Invoices;
 using EcommerceDemo.Api.Services.Permissions;
 using EcommerceDemo.Api.Validation;
 
@@ -52,6 +53,30 @@ public static class OrderEndpoints
                 .SingleOrDefaultAsync(x => x.Id == id);
 
             return order is null ? Results.NotFound() : Results.Ok(orderMapper.ToResponse(order));
+        }).RequirePermission("orders", "view");
+
+        group.MapGet("/{id:guid}/invoice", async (
+            Guid id,
+            AppDbContext db,
+            InvoiceDocumentService invoices,
+            CancellationToken cancellationToken) =>
+        {
+            var order = await db.Orders
+                .AsNoTracking()
+                .Include(x => x.Customer)
+                .Include(x => x.Items)
+                .AsSplitQuery()
+                .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+            if (order is null)
+            {
+                return Results.NotFound();
+            }
+
+            var pdf = await invoices.GenerateAsync(order, cancellationToken);
+            return Results.File(
+                pdf,
+                contentType: "application/pdf",
+                fileDownloadName: $"commerce-platform-invoice-{order.OrderNumber}.pdf");
         }).RequirePermission("orders", "view");
 
         group.MapPost("/", async (

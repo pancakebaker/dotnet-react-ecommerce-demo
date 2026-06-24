@@ -86,6 +86,7 @@ AI output is treated as a proposal, not authority. A developer should inspect ev
 | Permission consistency | Role checks alone do not describe resource actions or editable fields. | Centralize roles, actions, and field permissions in shared JSON consumed by backend and frontend permission helpers. | Navigation and API behavior use the same permission vocabulary, while the API remains authoritative. |
 | Environment configuration | Local convenience settings can become unsafe production defaults. | Support environment-based database, JWT, CORS, Stripe, and HubSpot configuration and fail fast on weak production JWT/in-memory database settings. | Fast local setup with explicit production guardrails. |
 | External integrations in tests | Real Stripe or HubSpot calls would make tests slow, costly, and nondeterministic. | Register testing providers in the `Testing` environment. | Integration paths can be exercised without real credentials or network calls. |
+| Invoice templates | String-built PDFs are difficult to customize, while React rendering would couple server documents to the browser application. | Use built-in ASP.NET Core Razor rendering for semantic HTML and PuppeteerSharp/Chromium for PDF conversion. | Invoice layout stays in a reusable template; the API container must provide Chromium, and browser rendering adds runtime cost. |
 
 ## Roadmap
 
@@ -99,3 +100,4 @@ AI output is treated as a proposal, not authority. A developer should inspect ev
 - Add deployment environments, artifact promotion, container scanning, and rollback automation.
 - Continue performance work with distributed caching and query telemetry if the app scales beyond one instance.
 - Run recurring accessibility audits and broaden keyboard/screen-reader browser coverage.
+- Add invoice template versioning and generated-document retention controls if invoices become regulated records.

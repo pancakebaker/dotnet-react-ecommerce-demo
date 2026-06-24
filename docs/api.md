@@ -64,7 +64,10 @@ The server reloads active products, applies server prices, recalculates totals, 
 | `GET` | `/api/orders?status=&page=&pageSize=` | List and filter orders | Staff/Admin | Returns orders with customer and line-item summaries. |
 | `GET` | `/api/orders/{id}` | Load one order | Staff/Admin | Returns the order or `404`. |
 | `POST` | `/api/orders` | Create a back-office order | Staff/Admin | Accepts customer ID, discount, and product quantities; prices are loaded server-side. |
+| `GET` | `/api/orders/{id}/invoice` | Download an order invoice | Staff/Admin | Requires `orders:view`; returns `application/pdf` with an attachment filename. |
 | `PATCH` | `/api/orders/{id}/status` | Update only order status | Staff/Admin | Accepts `{ "status": "..." }`; checks status-specific permission and returns `204`. |
+
+The invoice endpoint loads the persisted order, customer, and line items; renders `Templates/Invoices/Invoice.cshtml`; and converts the resulting HTML to PDF. It returns `404` when the order does not exist, `401` without a valid JWT, and `403` when the caller lacks order-view permission. Payment reference IDs are not included in the document.
 
 ## Error Behavior
 

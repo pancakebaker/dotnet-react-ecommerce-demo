@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using EcommerceDemo.Api.Dtos;
 
 namespace EcommerceDemo.Api.Tests;
@@ -76,5 +77,22 @@ public sealed class OrderEndpointTests(ApiTestFactory factory) : IClassFixture<A
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Staff_Can_Download_Razor_Generated_Order_Invoice_Pdf()
+    {
+        await _client.AuthenticateAsync("staff@ecommerce-demo.test");
+        var orders = await _client.GetFromJsonAsync<PagedResult<OrderResponse>>("/api/orders?page=1&pageSize=1");
+        var order = Assert.Single(orders!.Items);
+
+        var response = await _client.GetAsync($"/api/orders/{order.Id}/invoice");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/pdf", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal($"commerce-platform-invoice-{order.OrderNumber}.pdf", response.Content.Headers.ContentDisposition?.FileNameStar);
+        var pdf = await response.Content.ReadAsByteArrayAsync();
+        Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(pdf));
+        Assert.Contains("Razor invoice rendered", Encoding.ASCII.GetString(pdf));
     }
 }

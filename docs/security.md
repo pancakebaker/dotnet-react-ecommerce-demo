@@ -37,6 +37,7 @@ All browser input is untrusted. External-provider responses are also validated b
 | API abuse | Input ranges, page-size bounds, payload-field allowlists, CORS restrictions. | Add rate limiting, abuse detection, quotas, and edge protection. |
 | Secret exposure | Private settings remain server-side; local secret files are ignored; Vite values are treated as public. | Use a managed vault, workload identity, rotation, secret scanning, and image scanning. |
 | Unsafe user input | Server normalization/validation, markup-like input rejection, React text escaping, no raw HTML rendering. | Add centralized exception handling, content-specific encoding review, and security testing. |
+| Invoice HTML injection | Razor encodes invoice values, the model is built from persisted server data, and client totals/payment references are not accepted. | Add template security review and document-retention policy before invoices become regulated records. |
 | Data leakage | DTOs limit response shape; sensitive provider references are excluded from normal permission visibility. | Add data-classification, retention, access auditing, and privacy review. |
 | Session theft through XSS | React escapes rendered text and the API sets baseline response headers. | Prefer an HttpOnly cookie/BFF model or stronger token containment; define frontend CSP compatible with Stripe. |
 | Dependency compromise | Locked npm dependencies and repeatable CI installation. | Add dependency review, SAST, SBOM generation, and automated update policy. |
@@ -53,6 +54,7 @@ All browser input is untrusted. External-provider responses are also validated b
 - Baseline response headers
 - Production startup guardrails for JWT secret and database provider
 - Stripe PaymentIntent verification before card order creation
+- Server-side Razor invoice rendering without provider payment references
 
 ## Required Production Work
 

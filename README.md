@@ -52,6 +52,7 @@ The React frontend owns presentation and short-lived interaction state. The ASP.
 - Staff/Admin resource, action, and editable-field permissions.
 - Customer and product management with search and bounded pagination.
 - Order creation, status updates, activity logs, CSV exports, and PDF generation.
+- Authenticated server-generated invoice PDFs rendered from Razor templates.
 - Optional HubSpot deal creation and status synchronization.
 
 ### Engineering
@@ -66,12 +67,13 @@ The React frontend owns presentation and short-lived interaction state. The ASP.
 | Category | Technologies |
 | --- | --- |
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, D3.js |
-| Backend | .NET 8, ASP.NET Core minimal APIs, Entity Framework Core |
+| Backend | .NET 8, ASP.NET Core minimal APIs, Razor templates, Entity Framework Core |
 | Data | PostgreSQL, SQL Server, EF Core in-memory provider |
 | Identity | JWT bearer authentication, PBKDF2-SHA256 password hashing |
 | Payments | Stripe PaymentIntents, Stripe Elements, cash on delivery |
 | Integrations | Optional HubSpot synchronization and Google Maps |
 | Testing | xUnit, Vitest, Testing Library, Playwright |
+| Documents | Razor invoice templates, PuppeteerSharp/Chromium PDF rendering, client-side jsPDF exports |
 | Delivery | GitHub Actions, Docker, Docker Compose, nginx |
 
 ## Architecture
@@ -84,6 +86,8 @@ flowchart TB
   Api --> Endpoints["Endpoint modules"]
   Endpoints --> Controls["Authentication, permissions, validation"]
   Endpoints --> Services["Pricing, checkout, mapping, integrations"]
+  Services --> Razor["Razor invoice renderer"]
+  Razor --> Pdf["Chromium PDF generator"]
   Endpoints --> Data["EF Core AppDbContext"]
   Services --> Data
   Data --> Database["PostgreSQL / SQL Server / InMemory"]
@@ -94,6 +98,12 @@ flowchart TB
 Minimal API endpoint modules perform the controller role. They define routes, authorization, payload handling, and HTTP results. Focused services contain business-heavy and integration behavior. EF Core's `AppDbContext` is the persistence boundary; pass-through repositories are intentionally avoided until a use case needs a stronger abstraction.
 
 See [Architecture](docs/architecture.md) and the [ADR index](docs/adr/README.md) for detailed flows and decisions.
+
+### PDF and Document Generation
+
+Authenticated order invoices are generated server-side from persisted order data. `InvoiceViewModel` separates document data from the domain entity, an ASP.NET Core Razor template produces semantic print HTML, and PuppeteerSharp converts that HTML to PDF through Chromium. Razor is used instead of React because invoices are server-owned documents and must not depend on browser state or client-provided totals.
+
+The existing React/jsPDF exports remain available for storefront cash-on-delivery invoices and product catalogs; the React application itself is not replaced by Razor.
 
 ## Design Principles
 
@@ -155,6 +165,9 @@ The API defaults to in-memory persistence locally. Shared environments should us
 | `Cors__AllowedOrigins__0` | API | Allowed frontend origin |
 | `Stripe__SecretKey` | API secret | Stripe server credential |
 | `Stripe__Currency` | API | Payment currency |
+| `InvoicePdf__BrowserExecutablePath` | API | Chrome/Chromium executable used for PDF rendering |
+| `InvoicePdf__AllowBrowserDownload` | API | Allows PuppeteerSharp to download a managed browser when no executable is found |
+| `InvoicePdf__DisableSandbox` | API | Container-only Chromium compatibility option |
 | `HubSpot__Enabled` | API | Enables CRM synchronization |
 | `HubSpot__AccessToken` | API secret | HubSpot private app credential |
 | `VITE_API_URL` | Frontend public value | Hosted API URL |
@@ -176,6 +189,8 @@ Implemented controls include JWT validation, role/action/field permissions, PBKD
 
 Raw card data is handled by Stripe Elements and does not pass through the API. Private Stripe and HubSpot credentials remain server-side.
 
+Invoice HTML is rendered on the API from persisted order/customer records. Razor encodes dynamic values, totals are loaded from the server-owned order, and payment reference IDs are not included in the template or response metadata.
+
 See [Security and Threat Model](docs/security.md) for assets, threats, existing mitigations, and required future controls.
 
 ## API Overview
@@ -191,6 +206,7 @@ See [Security and Threat Model](docs/security.md) for assets, threats, existing 
 | `GET/POST/PUT/DELETE` | `/api/customers` | Manage customers | Staff/Admin by permission |
 | `GET/POST/PUT/DELETE` | `/api/products` | Manage products | Staff/Admin by permission |
 | `GET/POST` | `/api/orders` | Query or create orders | Staff/Admin by permission |
+| `GET` | `/api/orders/{id}/invoice` | Download server-generated invoice PDF | Staff/Admin by permission |
 | `PATCH` | `/api/orders/{id}/status` | Update order status | Staff/Admin by permission |
 | `GET/PUT` | `/api/profile` | Manage current profile | Staff/Admin |
 
@@ -239,6 +255,9 @@ src/EcommerceDemo.Api/
 |-- Dtos/                         API request/response contracts
 |-- Endpoints/                    Routes and HTTP orchestration
 |-- Services/                     Business rules and integrations
+|   `-- Invoices/                 Razor rendering and PDF generation
+|-- Templates/
+|   `-- Invoices/Invoice.cshtml   Print-friendly invoice template
 |-- Validation/                   Input and payload enforcement
 tests/EcommerceDemo.Api.Tests/    xUnit unit and integration tests
 client/src/
@@ -276,6 +295,7 @@ See [Known Limitations](docs/known-limitations.md) for implementation-specific c
 - Add distributed caching and horizontal-scaling support.
 - Add explicit frontend linting, artifact publication, deployment environments, and rollback automation.
 - Expand permission, accessibility, failure-path, and browser coverage.
+- Add invoice template versioning and document retention policy if generated invoices become regulated records.
 
 ## License
 

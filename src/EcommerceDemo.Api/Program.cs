@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using EcommerceDemo.Api.Data;
 using EcommerceDemo.Api.Endpoints;
 using EcommerceDemo.Api.Services;
+using EcommerceDemo.Api.Services.Invoices;
 using EcommerceDemo.Api.Services.Permissions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection("Stripe"));
 builder.Services.Configure<HubSpotOptions>(builder.Configuration.GetSection("HubSpot"));
+builder.Services.Configure<InvoicePdfOptions>(builder.Configuration.GetSection("InvoicePdf"));
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
 if (builder.Environment.IsProduction() &&
     (jwtOptions.Secret.Contains("dev-only", StringComparison.OrdinalIgnoreCase) || jwtOptions.Secret.Length < 32))
@@ -74,15 +76,19 @@ builder.Services.AddSingleton<OrderItemFactory>();
 builder.Services.AddSingleton<OrderMapper>();
 builder.Services.AddSingleton<OrderPricingService>();
 builder.Services.AddScoped<StorefrontCheckoutService>();
+builder.Services.AddScoped<IInvoiceTemplateRenderer, RazorInvoiceTemplateRenderer>();
+builder.Services.AddScoped<InvoiceDocumentService>();
 if (builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddSingleton<IPaymentProvider, TestingPaymentProvider>();
     builder.Services.AddSingleton<IHubSpotOrderSyncService, TestingHubSpotOrderSyncService>();
+    builder.Services.AddSingleton<IInvoicePdfGenerator, TestingInvoicePdfGenerator>();
 }
 else
 {
     builder.Services.AddScoped<IPaymentProvider, StripePaymentService>();
     builder.Services.AddHttpClient<IHubSpotOrderSyncService, HubSpotOrderSyncService>();
+    builder.Services.AddSingleton<IInvoicePdfGenerator, ChromiumInvoicePdfGenerator>();
 }
 builder.Services.AddScoped<ICheckoutPaymentMethod, CardCheckoutPaymentMethod>();
 builder.Services.AddSingleton<ICheckoutPaymentMethod, CashOnDeliveryPaymentMethod>();
@@ -108,6 +114,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("StaffOrAdmin", policy => policy.RequireRole("Admin", "Staff"));
 });
 
+builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

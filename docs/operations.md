@@ -93,4 +93,5 @@ The repository does not currently automate these procedures.
 - Review failed payments and external synchronization.
 - Reconcile activity/audit retention with policy.
 - Re-run performance and accessibility checks after material frontend changes.
+- Keep the configured Chromium package current and monitor invoice-generation latency and failures.
 - Validate production configuration before each release.
